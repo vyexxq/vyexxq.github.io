@@ -1,160 +1,65 @@
 /* --- Core Layout --- */
 body, html {
-    margin: 0;
-    padding: 0;
-    width: 100%;
-    height: 100%;
+    margin: 0; padding: 0; width: 100%; height: 100%;
     background: radial-gradient(circle at center, #151515 0%, #000 100%);
-    color: white;
-    font-family: "Segoe UI", Tahoma, sans-serif;
-    overflow: hidden;
-    perspective: 1200px;
-    cursor: none !important; /* Hides system cursor */
-    user-select: none; /* Prevents text highlighting during drag */
+    color: white; font-family: "Segoe UI", Tahoma, sans-serif;
+    overflow: hidden; perspective: 1200px;
+    cursor: none !important; user-select: none;
 }
 
 /* --- Custom Aero Cursor --- */
 #custom-cursor {
-    width: 22px;
-    height: 22px;
-    background: rgba(255, 255, 255, 0.3);
-    border: 1px solid rgba(255, 255, 255, 0.6);
-    border-radius: 50%;
-    position: fixed;
-    pointer-events: none;
-    z-index: 10000;
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
-    transform: translate(-50%, -50%);
+    width: 22px; height: 22px; background: rgba(255, 255, 255, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.6); border-radius: 50%;
+    position: fixed; pointer-events: none; z-index: 10000;
+    backdrop-filter: blur(6px); transform: translate(-50%, -50%);
     box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
 }
 
 /* --- Background Visuals --- */
-.background-streams {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: -2;
-    filter: blur(40px);
-}
+.background-streams { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -2; filter: blur(40px); }
+.stream { position: absolute; width: 400%; height: 35%; background: linear-gradient(180deg, transparent 0%, rgba(255, 255, 255, 0.05) 20%, rgba(255, 255, 255, 0.1) 50%, rgba(255, 255, 255, 0.05) 80%, transparent 100%); animation: flow 25s linear infinite; transform: rotate(-12deg); }
+@keyframes flow { from { transform: translateX(-50%) rotate(-12deg); } to { transform: translateX(0%) rotate(-12deg); } }
 
-.stream {
-    position: absolute;
-    width: 400%;
-    height: 35%;
-    background: linear-gradient(180deg, transparent 0%, rgba(255, 255, 255, 0.05) 20%, rgba(255, 255, 255, 0.1) 50%, rgba(255, 255, 255, 0.05) 80%, transparent 100%);
-    animation: flow 25s linear infinite;
-    transform: rotate(-12deg);
-}
+#bubbleCanvas { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -1; pointer-events: none; }
 
-@keyframes flow {
-    from { transform: translateX(-50%) rotate(-12deg); }
-    to { transform: translateX(0%) rotate(-12deg); }
-}
-
-/* --- The Bubble Layer --- */
-#bubbleCanvas {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    z-index: -1;
-    pointer-events: none; /* Allows clicks to pass through to the glass card */
-    display: block;
-}
-
-/* --- Main UI Container --- */
-.container {
-    width: 100%;
-    height: 100%;
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    pointer-events: none; /* Container is invisible to clicks */
-}
+.container { width: 100%; height: 100%; position: relative; display: flex; align-items: center; justify-content: center; pointer-events: none; }
 
 /* --- The Glass Card --- */
 .glass-card {
-    background: rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(25px);
-    -webkit-backdrop-filter: blur(25px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 24px;
-    padding: 30px;
-    width: 380px;
-    position: absolute;
-    box-shadow: 0 30px 60px rgba(0,0,0,0.5);
-    z-index: 10;
-    pointer-events: auto; /* Card catches clicks and drags */
-    transition: filter 0.1s ease-out; /* Smooths the crack intensity */
+    background: rgba(255, 255, 255, 0.08); backdrop-filter: blur(25px);
+    border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 24px;
+    padding: 30px; width: 380px; position: absolute;
+    box-shadow: 0 30px 60px rgba(0,0,0,0.5); z-index: 10;
+    pointer-events: auto; transition: filter 0.1s ease-out;
 }
 
-.system-time {
-    font-size: 0.75rem;
-    letter-spacing: 2px;
-    opacity: 0.6;
-    margin-bottom: 5px;
+.card-header {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 10px;
 }
 
-/* --- Buttons (Locked inside Card) --- */
-.button-group {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    width: 100%;
-    margin-top: 20px;
+.stats, .system-time {
+    font-size: 0.75rem; letter-spacing: 2px; opacity: 0.6; margin: 0;
 }
 
-.mag-button {
-    display: block;
-    position: relative;
-    padding: 14px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 10px;
-    color: white;
-    text-decoration: none;
-    text-align: center;
-    backdrop-filter: blur(5px);
-    overflow: hidden;
-    transition: background 0.2s, transform 0.1s;
+/* --- Ghost Outline --- */
+#card-outline {
+    position: absolute; border: 2px dashed rgba(255, 255, 255, 0.1);
+    border-radius: 24px; pointer-events: none; display: none; z-index: 1;
 }
 
-.mag-button:hover {
-    background: rgba(255, 255, 255, 0.1);
-    transform: scale(1.02);
-}
-
-.gloss {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 50%;
-    background: linear-gradient(180deg, rgba(255,255,255,0.1) 0%, transparent 100%);
-}
+/* --- Buttons --- */
+.button-group { display: flex; flex-direction: column; gap: 10px; width: 100%; margin-top: 20px; }
+.mag-button { display: block; position: relative; padding: 14px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px; color: white; text-decoration: none; text-align: center; backdrop-filter: blur(5px); overflow: hidden; transition: 0.2s; }
+.mag-button:hover { background: rgba(255, 255, 255, 0.1); transform: scale(1.02); }
+.gloss { position: absolute; top: 0; left: 0; width: 100%; height: 50%; background: linear-gradient(180deg, rgba(255,255,255,0.1) 0%, transparent 100%); }
 
 /* --- Shards & Shatter --- */
-#shatter-container {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-    z-index: 5;
-}
-
+#shatter-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5; }
 .shard {
-    position: absolute;
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    z-index: 6;
-    pointer-events: auto; /* Allows shards to be grabbed */
+    position: absolute; background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.2);
+    z-index: 20; pointer-events: auto;
 }
+.shard.snapped { border-color: rgba(255, 255, 255, 0.6); box-shadow: 0 0 15px rgba(255, 255, 255, 0.2); }
