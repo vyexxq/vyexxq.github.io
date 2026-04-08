@@ -4,7 +4,6 @@ const canvas = document.getElementById('bubbleCanvas');
 const ctx = canvas.getContext('2d');
 
 let mouse = { x: -1000, y: -1000 };
-let ripples = [];
 let particles = [];
 let bubbles = [];
 
@@ -27,44 +26,7 @@ function updateClock() {
 setInterval(updateClock, 1000);
 updateClock();
 
-// --- 2. XBOX 360 STYLE RIPPLE ---
-window.addEventListener('mousedown', e => {
-    ripples.push({
-        x: e.clientX,
-        y: e.clientY,
-        r: 0,
-        life: 1.0
-    });
-});
-
-function drawRipples() {
-    ctx.save(); // Isolate styles
-    for (let i = ripples.length - 1; i >= 0; i--) {
-        let r = ripples[i];
-        r.r += 8; // Faster expansion for better feel
-        r.life -= 0.02;
-
-        if (r.life <= 0) {
-            ripples.splice(i, 1);
-            continue;
-        }
-
-        ctx.beginPath();
-        ctx.arc(r.x, r.y, r.r, 0, Math.PI * 2);
-        ctx.strokeStyle = `rgba(255, 255, 255, ${r.life * 0.25})`;
-        ctx.lineWidth = 15;
-        ctx.stroke();
-
-        ctx.beginPath();
-        ctx.arc(r.x, r.y, r.r + 8, 0, Math.PI * 2);
-        ctx.strokeStyle = `rgba(255, 255, 255, ${r.life * 0.08})`;
-        ctx.lineWidth = 2;
-        ctx.stroke();
-    }
-    ctx.restore(); // Reset styles so bubbles aren't affected
-}
-
-// --- 3. INTERACTION ---
+// --- 2. INTERACTION ---
 if (card) {
     card.addEventListener('mousemove', (e) => {
         const rect = card.getBoundingClientRect();
@@ -98,7 +60,7 @@ buttons.forEach(btn => {
     animateBtn();
 });
 
-// --- 4. BUBBLES ---
+// --- 3. BUBBLES ---
 class Bubble {
     constructor() { this.init(); }
     init() {
@@ -144,22 +106,13 @@ function resize() {
 window.addEventListener('resize', resize);
 resize();
 
-// --- 5. MAIN LOOP ---
+// --- 4. MAIN LOOP ---
 function main() {
-    // Clear canvas entirely every frame
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // 1. Draw Ripples (Behind bubbles)
-    drawRipples();
-
-    // 2. Draw Bubbles
     bubbles.forEach(b => {
         b.update();
         b.draw();
     });
-
-    // 3. Draw Particles (Top layer)
-    ctx.save();
     for (let i = particles.length - 1; i >= 0; i--) {
         let p = particles[i];
         p.x += p.vx; p.y += p.vy; p.l -= 0.03;
@@ -170,8 +123,6 @@ function main() {
         ctx.fillStyle = `rgba(255,255,255,${p.l})`;
         ctx.fillRect(p.x, p.y, 2, 2);
     }
-    ctx.restore();
-
     requestAnimationFrame(main);
 }
 main();
