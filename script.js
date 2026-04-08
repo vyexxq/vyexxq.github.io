@@ -5,22 +5,28 @@ const ctx = canvas.getContext('2d');
 
 let mouse = { x: -1000, y: -1000 };
 let ripples = [];
+let particles = [];
 
 window.addEventListener('mousemove', e => { 
     mouse.x = e.clientX; 
     mouse.y = e.clientY; 
 });
 
-// --- 1. SYSTEM CLOCK ---
+// --- 1. SYSTEM CLOCK (Fix: Added padStart for stability) ---
 function updateClock() {
-    const now = new Date();
-    const timeString = now.toLocaleTimeString([], { hour12: false });
-    document.getElementById('clock').textContent = timeString;
+    const clockElement = document.getElementById('clock');
+    if (clockElement) {
+        const now = new Date();
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const seconds = String(now.getSeconds()).padStart(2, '0');
+        clockElement.textContent = `${hours}:${minutes}:${seconds}`;
+    }
 }
 setInterval(updateClock, 1000);
 updateClock();
 
-// --- 2. CLICK RIPPLE (Warp Effect) ---
+// --- 2. CLICK RIPPLE (Xbox 360 Warp Effect) ---
 window.addEventListener('mousedown', e => {
     ripples.push(new Ripple(e.clientX, e.clientY));
 });
@@ -30,18 +36,16 @@ class Ripple {
         this.x = x;
         this.y = y;
         this.r = 0;
-        this.maxR = 150;
         this.life = 1.0;
     }
     draw() {
-        this.r += 4; // Speed of the wave
-        this.life -= 0.02; // Fades out
+        this.r += 5; 
+        this.life -= 0.02;
         
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
-        // This gradient creates the "warping" highlight look
         ctx.strokeStyle = `rgba(255, 255, 255, ${this.life * 0.3})`;
-        ctx.lineWidth = 15; // Thick wave looks like a lens
+        ctx.lineWidth = 15; 
         ctx.stroke();
         
         ctx.beginPath();
@@ -53,16 +57,18 @@ class Ripple {
 }
 
 // --- 3. TILT EFFECT ---
-card.addEventListener('mousemove', (e) => {
-    const rect = card.getBoundingClientRect();
-    const x = (e.clientX - rect.left) / rect.width - 0.5;
-    const y = (e.clientY - rect.top) / rect.height - 0.5;
-    card.style.transform = `rotateY(${x * 10}deg) rotateX(${-y * 10}deg)`;
-});
+if (card) {
+    card.addEventListener('mousemove', (e) => {
+        const rect = card.getBoundingClientRect();
+        const x = (e.clientX - rect.left) / rect.width - 0.5;
+        const y = (e.clientY - rect.top) / rect.height - 0.5;
+        card.style.transform = `rotateY(${x * 10}deg) rotateX(${-y * 10}deg)`;
+    });
 
-card.addEventListener('mouseleave', () => {
-    card.style.transform = `rotateY(0deg) rotateX(0deg)`;
-});
+    card.addEventListener('mouseleave', () => {
+        card.style.transform = `rotateY(0deg) rotateX(0deg)`;
+    });
+}
 
 // --- 4. MAGNETIC BUTTONS ---
 buttons.forEach(btn => {
@@ -87,9 +93,12 @@ buttons.forEach(btn => {
 });
 
 // --- 5. BUBBLE LOGIC & MAIN LOOP ---
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
-let particles = [];
+function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resize);
+resize();
 
 class Bubble {
     constructor() { this.init(); }
@@ -104,7 +113,6 @@ class Bubble {
         this.x += this.vx; this.y += this.vy;
         if (this.x < 0 || this.x > canvas.width) this.vx *= -1;
         if (this.y < 0 || this.y > canvas.height) this.vy *= -1;
-
         if (Math.hypot(mouse.x - this.x, mouse.y - this.y) < this.size) this.pop();
 
         ctx.beginPath();
@@ -129,16 +137,13 @@ const bubbles = Array.from({length: 20}, () => new Bubble());
 function mainLoop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    // Draw Ripples first (background)
     ripples.forEach((r, i) => {
         r.draw();
         if(r.life <= 0) ripples.splice(i, 1);
     });
 
-    // Draw Bubbles
     bubbles.forEach(b => b.draw());
 
-    // Draw Pop Particles
     particles.forEach((p, i) => {
         p.x += p.vx; p.y += p.vy; p.l -= 0.05;
         ctx.fillStyle = `rgba(255,255,255,${p.l})`;
@@ -149,8 +154,3 @@ function mainLoop() {
     requestAnimationFrame(mainLoop);
 }
 mainLoop();
-
-window.addEventListener('resize', () => {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-});
