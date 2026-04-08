@@ -17,20 +17,14 @@ body, html {
 /* --- FRUTIGER AERO BACKGROUND STREAMS --- */
 .background-streams {
     position: fixed;
-    top: 0; 
-    left: 0; 
-    width: 100%; 
-    height: 100%;
+    top: 0; left: 0; width: 100%; height: 100%;
     z-index: -2;
-    filter: blur(4px); /* Sharper, more defined gloss */
+    filter: blur(4px);
 }
 
 .stream {
     position: absolute;
-    /* Extra wide to prevent clipping/visible ends during flow */
-    width: 400%; 
-    height: 35%;
-    /* Layered Gray Glossy Gradient */
+    width: 400%; height: 35%;
     background: linear-gradient(180deg, 
         transparent 0%, 
         rgba(255, 255, 255, 0.05) 20%, 
@@ -42,7 +36,6 @@ body, html {
     pointer-events: none;
 }
 
-/* Individual stream placements for depth */
 .s1 { top: -5%; animation-duration: 20s; opacity: 0.4; }
 .s2 { top: 20%; animation-duration: 35s; opacity: 0.2; animation-delay: -10s; }
 .s3 { top: 45%; animation-duration: 28s; opacity: 0.3; animation-delay: -5s; }
@@ -53,16 +46,13 @@ body, html {
     to { transform: translateX(0%) rotate(-12deg); }
 }
 
-/* Bubble Canvas Layer */
 #bubbleCanvas {
     position: fixed;
-    top: 0; 
-    left: 0;
+    top: 0; left: 0;
     z-index: -1;
     pointer-events: none;
 }
 
-/* --- MAIN LAYOUT --- */
 .container {
     display: flex;
     flex-direction: column;
@@ -72,7 +62,6 @@ body, html {
     width: 90%;
 }
 
-/* --- GLASS PANEL (THE CARD) --- */
 .glass-card {
     background: rgba(255, 255, 255, 0.1); 
     backdrop-filter: blur(20px);
@@ -89,42 +78,27 @@ body, html {
     transition: transform 0.1s ease-out;
 }
 
-/* Typography */
-h1 { 
-    font-weight: 600; 
-    font-size: 2.2rem; 
-    margin: 10px 0; 
-}
-
-.subtitle { 
-    opacity: 0.8; 
-    font-size: 0.9rem; 
-    line-height: 1.5; 
-}
-
-.stats { 
-    font-size: 0.8rem; 
-    opacity: 0.5; 
-    margin: 0; 
-}
-
-/* --- BUTTONS & INTERACTION --- */
-.button-group {
-    width: 100%;
-    max-width: 480px;
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-}
+h1 { font-weight: 600; font-size: 2.2rem; margin: 10px 0; }
+.subtitle { opacity: 0.8; font-size: 0.9rem; line-height: 1.5; }
+.stats { font-size: 0.8rem; opacity: 0.5; margin: 0; }
 
 .system-time {
     font-family: "Segoe UI", sans-serif;
     font-weight: 200;
     font-size: 0.75rem;
     letter-spacing: 2px;
-    opacity: 0.5;
+    opacity: 0.6;
+    margin-top: 5px;
     margin-bottom: 5px;
     text-transform: uppercase;
+}
+
+.button-group {
+    width: 100%;
+    max-width: 480px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
 }
 
 .mag-button {
@@ -148,40 +122,9 @@ h1 {
     border-color: rgba(255, 255, 255, 0.5);
 }
 
-/* The Gloss Highlight on Buttons */
 .gloss {
     position: absolute;
-    top: 0; 
-    left: 0; 
-    width: 100%; 
-    height: 50%;
+    top: 0; left: 0; width: 100%; height: 50%;
     background: linear-gradient(180deg, rgba(255,255,255,0.15) 0%, transparent 100%);
     pointer-events: none;
-}
-
-/* --- SOCIAL GRID (FOR SOCIALS PAGE) --- */
-.social-grid {
-    display: grid; 
-    grid-template-columns: 1fr 1fr; 
-    gap: 15px; 
-    margin-top: 20px;
-    width: 100%;
-}
-
-.social-btn {
-    padding: 20px !important;
-    font-size: 0.85rem !important;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-}
-
-/* Mobile Responsiveness for Socials */
-@media (max-width: 480px) {
-    .social-grid {
-        grid-template-columns: 1fr !important;
-    }
-    
-    h1 {
-        font-size: 1.8rem;
-    }
 }
