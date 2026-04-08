@@ -37,21 +37,31 @@ window.addEventListener('mousedown', e => {
     });
 });
 
-function drawRipple(r) {
-    r.r += 6; // Fast expansion
-    r.life -= 0.025; // Smooth fade
+function drawRipples() {
+    ctx.save(); // Isolate styles
+    for (let i = ripples.length - 1; i >= 0; i--) {
+        let r = ripples[i];
+        r.r += 8; // Faster expansion for better feel
+        r.life -= 0.02;
 
-    ctx.beginPath();
-    ctx.arc(r.x, r.y, r.r, 0, Math.PI * 2);
-    ctx.strokeStyle = `rgba(255, 255, 255, ${r.life * 0.2})`;
-    ctx.lineWidth = 20; // Thick "Lens" effect
-    ctx.stroke();
+        if (r.life <= 0) {
+            ripples.splice(i, 1);
+            continue;
+        }
 
-    ctx.beginPath();
-    ctx.arc(r.x, r.y, r.r + 10, 0, Math.PI * 2);
-    ctx.strokeStyle = `rgba(255, 255, 255, ${r.life * 0.05})`;
-    ctx.lineWidth = 2;
-    ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(r.x, r.y, r.r, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(255, 255, 255, ${r.life * 0.25})`;
+        ctx.lineWidth = 15;
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(r.x, r.y, r.r + 8, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(255, 255, 255, ${r.life * 0.08})`;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+    }
+    ctx.restore(); // Reset styles so bubbles aren't affected
 }
 
 // --- 3. INTERACTION ---
@@ -75,12 +85,12 @@ buttons.forEach(btn => {
         const cY = rect.top + rect.height / 2;
         const dist = Math.hypot(mouse.x - cX, mouse.y - cY);
         let tx = 0, ty = 0;
-        if (dist < 80) { 
+        if (dist < 100) { 
             tx = (mouse.x - cX) * 0.4;
             ty = (mouse.y - cY) * 0.4;
         }
-        vx += (tx - bx) * 0.2; vy += (ty - by) * 0.2;
-        vx *= 0.7; vy *= 0.7;
+        vx += (tx - bx) * 0.15; vy += (ty - by) * 0.15;
+        vx *= 0.8; vy *= 0.8;
         bx += vx; by += vy;
         btn.style.transform = `translate(${bx}px, ${by}px)`;
         requestAnimationFrame(animateBtn);
@@ -95,8 +105,8 @@ class Bubble {
         this.x = Math.random() * canvas.width;
         this.y = Math.random() * canvas.height;
         this.size = Math.random() * 15 + 5;
-        this.vx = (Math.random() - 0.5) * 0.4;
-        this.vy = (Math.random() - 0.5) * 0.4;
+        this.vx = (Math.random() - 0.5) * 0.5;
+        this.vy = (Math.random() - 0.5) * 0.5;
     }
     update() {
         this.x += this.vx; this.y += this.vy;
@@ -112,7 +122,8 @@ class Bubble {
         g.addColorStop(1, "rgba(255,255,255,0)");
         ctx.fillStyle = g;
         ctx.fill();
-        ctx.strokeStyle = "rgba(255,255,255,0.1)";
+        ctx.strokeStyle = "rgba(255,255,255,0.08)";
+        ctx.lineWidth = 1;
         ctx.stroke();
     }
     pop() {
@@ -122,7 +133,7 @@ class Bubble {
 }
 
 function initBubbles() {
-    bubbles = Array.from({length: 25}, () => new Bubble());
+    bubbles = Array.from({length: 30}, () => new Bubble());
 }
 
 function resize() {
@@ -135,13 +146,11 @@ resize();
 
 // --- 5. MAIN LOOP ---
 function main() {
+    // Clear canvas entirely every frame
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // 1. Draw Ripples
-    for (let i = ripples.length - 1; i >= 0; i--) {
-        drawRipple(ripples[i]);
-        if (ripples[i].life <= 0) ripples.splice(i, 1);
-    }
+    // 1. Draw Ripples (Behind bubbles)
+    drawRipples();
 
     // 2. Draw Bubbles
     bubbles.forEach(b => {
@@ -149,14 +158,19 @@ function main() {
         b.draw();
     });
 
-    // 3. Draw Particles
+    // 3. Draw Particles (Top layer)
+    ctx.save();
     for (let i = particles.length - 1; i >= 0; i--) {
         let p = particles[i];
-        p.x += p.vx; p.y += p.vy; p.l -= 0.04;
+        p.x += p.vx; p.y += p.vy; p.l -= 0.03;
+        if (p.l <= 0) {
+            particles.splice(i, 1);
+            continue;
+        }
         ctx.fillStyle = `rgba(255,255,255,${p.l})`;
         ctx.fillRect(p.x, p.y, 2, 2);
-        if (p.l <= 0) particles.splice(i, 1);
     }
+    ctx.restore();
 
     requestAnimationFrame(main);
 }
