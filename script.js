@@ -1,128 +1,134 @@
 const card = document.getElementById('tilt-card');
-const buttons = document.querySelectorAll('.mag-button');
+const cursor = document.getElementById('custom-cursor');
+const shatterContainer = document.getElementById('shatter-container');
 const canvas = document.getElementById('bubbleCanvas');
 const ctx = canvas.getContext('2d');
 
-let mouse = { x: -1000, y: -1000 };
-let particles = [];
-let bubbles = [];
+let mouse = { x: window.innerWidth/2, y: window.innerHeight/2 };
+let cardPos = { x: window.innerWidth/2 - 240, y: window.innerHeight/2 - 200 };
+let cardVel = { x: 0, y: 0 };
+let isDragging = false, dragOffset = { x: 0, y: 0 }, lastMouse = { x: 0, y: 0 };
+let moveDist = 0, clickCount = 0;
 
+// --- 1. MOUSE & CURSOR ---
 window.addEventListener('mousemove', e => { 
-    mouse.x = e.clientX; 
-    mouse.y = e.clientY; 
+    mouse.x = e.clientX; mouse.y = e.clientY; 
+    cursor.style.left = `${e.clientX}px`;
+    cursor.style.top = `${e.clientY}px`;
 });
 
-// --- 1. SYSTEM CLOCK ---
-function updateClock() {
-    const clockElement = document.getElementById('clock');
-    if (clockElement) {
-        const now = new Date();
-        const h = String(now.getHours()).padStart(2, '0');
-        const m = String(now.getMinutes()).padStart(2, '0');
-        const s = String(now.getSeconds()).padStart(2, '0');
-        clockElement.textContent = `${h}:${m}:${s}`;
+// --- 2. CLICK & DRAG LOGIC ---
+card.addEventListener('mousedown', e => {
+    isDragging = true;
+    moveDist = 0; // Reset movement tracker
+    dragOffset.x = e.clientX - cardPos.x;
+    dragOffset.y = e.clientY - cardPos.y;
+});
+
+window.addEventListener('mousemove', () => { if(isDragging) moveDist += 1; });
+
+window.addEventListener('mouseup', () => {
+    if (isDragging && moveDist < 5) { // It was a click, not a drag
+        handleDamage();
+    }
+    isDragging = false;
+});
+
+function handleDamage() {
+    clickCount++;
+    card.style.filter = `url(#crack-filter) blur(${clickCount * 0.5}px)`;
+    card.style.opacity = 1 - (clickCount * 0.1);
+    
+    if (clickCount >= 5) {
+        shatter();
     }
 }
-setInterval(updateClock, 1000);
-updateClock();
 
-// --- 2. INTERACTION ---
-if (card) {
-    card.addEventListener('mousemove', (e) => {
-        const rect = card.getBoundingClientRect();
-        const x = (e.clientX - rect.left) / rect.width - 0.5;
-        const y = (e.clientY - rect.top) / rect.height - 0.5;
-        card.style.transform = `rotateY(${x * 10}deg) rotateX(${-y * 10}deg)`;
-    });
-    card.addEventListener('mouseleave', () => {
-        card.style.transform = `rotateY(0deg) rotateX(0deg)`;
-    });
+function shatter() {
+    const rect = card.getBoundingClientRect();
+    card.style.display = 'none';
+
+    for (let i = 0; i < 15; i++) {
+        const s = document.createElement('div');
+        s.className = 'shard';
+        const size = Math.random() * 80 + 40;
+        s.style.width = `${size}px`;
+        s.style.height = `${size}px`;
+        s.style.left = `${rect.left + Math.random() * rect.width}px`;
+        s.style.top = `${rect.top + Math.random() * rect.height}px`;
+        
+        // Random Shard Shape
+        const p = `${Math.random()*100}% ${Math.random()*100}%, ${Math.random()*100}% ${Math.random()*100}%, ${Math.random()*100}% ${Math.random()*100}%`;
+        s.style.clipPath = `polygon(${p})`;
+        
+        shatterContainer.appendChild(s);
+        makeShardPhysics(s);
+    }
 }
 
-buttons.forEach(btn => {
-    let bx = 0, by = 0, vx = 0, vy = 0; 
-    function animateBtn() {
-        const rect = btn.getBoundingClientRect();
-        const cX = rect.left + rect.width / 2;
-        const cY = rect.top + rect.height / 2;
-        const dist = Math.hypot(mouse.x - cX, mouse.y - cY);
-        let tx = 0, ty = 0;
-        if (dist < 100) { 
-            tx = (mouse.x - cX) * 0.4;
-            ty = (mouse.y - cY) * 0.4;
+// --- 3. PHYSICS ENGINE (Card & Shards) ---
+function makeShardPhysics(el) {
+    let pos = { x: parseFloat(el.style.left), y: parseFloat(el.style.top) };
+    let vel = { x: (Math.random() - 0.5) * 20, y: (Math.random() - 0.5) * 20 };
+    let drag = false, off = {x:0, y:0};
+
+    el.addEventListener('mousedown', e => { drag = true; off.x = e.clientX - pos.x; off.y = e.clientY - pos.y; });
+    window.addEventListener('mouseup', () => drag = false);
+
+    function update() {
+        if (drag) {
+            vel.x = mouse.x - lastMouse.x; vel.y = mouse.y - lastMouse.y;
+            pos.x = mouse.x - off.x; pos.y = mouse.y - off.y;
+        } else {
+            vel.y += 0.5; // Gravity
+            pos.x += vel.x; pos.y += vel.y;
+            vel.x *= 0.99; vel.y *= 0.99; // Friction
+
+            if (pos.y + el.offsetHeight > window.innerHeight) {
+                pos.y = window.innerHeight - el.offsetHeight;
+                vel.y *= -0.4; // Bounce
+            }
+            if (pos.x < 0 || pos.x + el.offsetWidth > window.innerWidth) vel.x *= -0.6;
         }
-        vx += (tx - bx) * 0.15; vy += (ty - by) * 0.15;
-        vx *= 0.8; vy *= 0.8;
-        bx += vx; by += vy;
-        btn.style.transform = `translate(${bx}px, ${by}px)`;
-        requestAnimationFrame(animateBtn);
+        el.style.left = `${pos.x}px`; el.style.top = `${pos.y}px`;
+        requestAnimationFrame(update);
     }
-    animateBtn();
-});
+    update();
+}
 
-// --- 3. BUBBLES ---
+function applyCardPhysics() {
+    if (isDragging) {
+        cardVel.x = mouse.x - lastMouse.x; cardVel.y = mouse.y - lastMouse.y;
+        cardPos.x = mouse.x - dragOffset.x; cardPos.y = mouse.y - dragOffset.y;
+    } else {
+        cardPos.x += cardVel.x; cardPos.y += cardVel.y;
+        cardVel.x *= 0.98; cardVel.y *= 0.98;
+        const rect = card.getBoundingClientRect();
+        if (cardPos.x <= 0 || cardPos.x + rect.width >= window.innerWidth) cardVel.x *= -0.7;
+        if (cardPos.y <= 0 || cardPos.y + rect.height >= window.innerHeight) cardVel.y *= -0.7;
+    }
+    card.style.left = `${cardPos.x}px`; card.style.top = `${cardPos.y}px`;
+    lastMouse.x = mouse.x; lastMouse.y = mouse.y;
+    requestAnimationFrame(applyCardPhysics);
+}
+applyCardPhysics();
+
+// --- 4. CLOCK & BUBBLES ---
+setInterval(() => {
+    const now = new Date();
+    document.getElementById('clock').textContent = now.toLocaleTimeString([], {hour12:false});
+}, 1000);
+
+canvas.width = window.innerWidth; canvas.height = window.innerHeight;
 class Bubble {
     constructor() { this.init(); }
-    init() {
-        this.x = Math.random() * canvas.width;
-        this.y = Math.random() * canvas.height;
-        this.size = Math.random() * 15 + 5;
-        this.vx = (Math.random() - 0.5) * 0.5;
-        this.vy = (Math.random() - 0.5) * 0.5;
-    }
-    update() {
-        this.x += this.vx; this.y += this.vy;
-        if (this.x < 0 || this.x > canvas.width) this.vx *= -1;
-        if (this.y < 0 || this.y > canvas.height) this.vy *= -1;
-        if (Math.hypot(mouse.x - this.x, mouse.y - this.y) < this.size) this.pop();
-    }
+    init() { this.x = Math.random()*canvas.width; this.y = Math.random()*canvas.height; this.size = Math.random()*15+5; this.vx = (Math.random()-0.5); this.vy = (Math.random()-0.5); }
     draw() {
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-        const g = ctx.createRadialGradient(this.x-this.size/3, this.y-this.size/3, 1, this.x, this.y, this.size);
-        g.addColorStop(0, "rgba(255,255,255,0.3)");
-        g.addColorStop(1, "rgba(255,255,255,0)");
-        ctx.fillStyle = g;
-        ctx.fill();
-        ctx.strokeStyle = "rgba(255,255,255,0.08)";
-        ctx.lineWidth = 1;
-        ctx.stroke();
-    }
-    pop() {
-        for(let i=0; i<5; i++) particles.push({ x: this.x, y: this.y, vx:(Math.random()-0.5)*4, vy:(Math.random()-0.5)*4, l:1 });
-        this.init();
+        this.x += this.vx; this.y += this.vy;
+        ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI*2);
+        ctx.fillStyle = "rgba(255,255,255,0.1)"; ctx.fill();
     }
 }
-
-function initBubbles() {
-    bubbles = Array.from({length: 30}, () => new Bubble());
-}
-
-function resize() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    initBubbles();
-}
-window.addEventListener('resize', resize);
-resize();
-
-// --- 4. MAIN LOOP ---
-function main() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    bubbles.forEach(b => {
-        b.update();
-        b.draw();
-    });
-    for (let i = particles.length - 1; i >= 0; i--) {
-        let p = particles[i];
-        p.x += p.vx; p.y += p.vy; p.l -= 0.03;
-        if (p.l <= 0) {
-            particles.splice(i, 1);
-            continue;
-        }
-        ctx.fillStyle = `rgba(255,255,255,${p.l})`;
-        ctx.fillRect(p.x, p.y, 2, 2);
-    }
-    requestAnimationFrame(main);
-}
-main();
+const bubbles = Array.from({length: 20}, () => new Bubble());
+function loop() { ctx.clearRect(0,0,canvas.width,canvas.height); bubbles.forEach(b => b.draw()); requestAnimationFrame(loop); }
+loop();
