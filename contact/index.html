@@ -7,6 +7,8 @@
     <link rel="stylesheet" href="../style.css">
 </head>
 <body>
+    <div id="custom-cursor"></div>
+
     <div class="background-streams">
         <div class="stream s1"></div>
         <div class="stream s2"></div>
@@ -14,32 +16,43 @@
         <div class="stream s4"></div>
     </div>
     <canvas id="bubbleCanvas"></canvas>
+    <div id="shatter-container"></div>
 
     <main class="container">
-        <div class="glass-card" id="tilt-card" style="max-width: 500px;">
-            <h1 style="font-size: 1.8rem; margin-bottom: 5px;">Inquiries</h1>
-            <p class="subtitle" style="margin-bottom: 25px;">For all professional or creative inquiries, reach out via the methods below.</p>
+        <div class="glass-card draggable" id="tilt-card" style="max-width: 500px;">
+            <h1 style="font-size: 1.8rem; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 10px; margin-bottom: 20px;">Get in Touch</h1>
             
-            <div class="contact-list" style="display: flex; flex-direction: column; gap: 15px;">
-                <div style="background: rgba(255,255,255,0.03); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); position: relative; overflow: hidden;">
-                    <span style="font-size: 0.7rem; text-transform: uppercase; opacity: 0.5; letter-spacing: 1px;">Email Address</span>
-                    <p style="margin: 5px 0 0 0; font-weight: 500; font-size: 1.1rem; color: #fff;">mynameisvyexx@gmail.com</p>
+            <p style="opacity: 0.8; line-height: 1.6; margin-bottom: 25px;">
+                For business inquiries, collaboration, or just to say hi, feel free to reach out via the channels below.
+            </p>
+
+            <div class="contact-methods" style="display: flex; flex-direction: column; gap: 15px;">
+                <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
+                    <small style="display: block; opacity: 0.5; margin-bottom: 5px; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px;">Email</small>
+                    <span style="font-family: monospace; font-size: 1.1rem;">business@vyexx.com</span>
                 </div>
 
-                <div style="background: rgba(255,255,255,0.03); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); position: relative; overflow: hidden;">
-                    <span style="font-size: 0.7rem; text-transform: uppercase; opacity: 0.5; letter-spacing: 1px;">Discord Handle</span>
-                    <p style="margin: 5px 0 0 0; font-weight: 500; font-size: 1.1rem; color: #fff;">fruityparametriceq2</p>
+                <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
+                    <small style="display: block; opacity: 0.5; margin-bottom: 5px; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px;">Discord</small>
+                    <span style="font-family: monospace; font-size: 1.1rem;">@vyexx</span>
                 </div>
             </div>
-        </div>
-        
-        <div class="button-group" style="width: 200px;">
-            <a href="https://vyexx.com" class="mag-button">
-                <span class="gloss"></span>
-                Back Home
-            </a>
+
+            <div class="button-group">
+                <a href="../index.html" class="mag-button">
+                    <span class="gloss"></span>
+                    Back Home
+                </a>
+            </div>
         </div>
     </main>
+
+    <svg style="display: none;">
+        <filter id="crack-filter">
+            <feTurbulence type="fractalNoise" baseFrequency="0.6" numOctaves="3" result="noise" />
+            <feDisplacementMap in="SourceGraphic" in2="noise" scale="0" id="crack-displace" />
+        </filter>
+    </svg>
 
     <script src="../script.js"></script>
 </body>
