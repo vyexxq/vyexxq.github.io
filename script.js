@@ -4,12 +4,55 @@ const canvas = document.getElementById('bubbleCanvas');
 const ctx = canvas.getContext('2d');
 
 let mouse = { x: -1000, y: -1000 };
+let ripples = [];
+
 window.addEventListener('mousemove', e => { 
     mouse.x = e.clientX; 
     mouse.y = e.clientY; 
 });
 
-// Tilt Logic
+// --- 1. SYSTEM CLOCK ---
+function updateClock() {
+    const now = new Date();
+    const timeString = now.toLocaleTimeString([], { hour12: false });
+    document.getElementById('clock').textContent = timeString;
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// --- 2. CLICK RIPPLE (Warp Effect) ---
+window.addEventListener('mousedown', e => {
+    ripples.push(new Ripple(e.clientX, e.clientY));
+});
+
+class Ripple {
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
+        this.r = 0;
+        this.maxR = 150;
+        this.life = 1.0;
+    }
+    draw() {
+        this.r += 4; // Speed of the wave
+        this.life -= 0.02; // Fades out
+        
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+        // This gradient creates the "warping" highlight look
+        ctx.strokeStyle = `rgba(255, 255, 255, ${this.life * 0.3})`;
+        ctx.lineWidth = 15; // Thick wave looks like a lens
+        ctx.stroke();
+        
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.r - 5, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(255, 255, 255, ${this.life * 0.1})`;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+    }
+}
+
+// --- 3. TILT EFFECT ---
 card.addEventListener('mousemove', (e) => {
     const rect = card.getBoundingClientRect();
     const x = (e.clientX - rect.left) / rect.width - 0.5;
@@ -21,7 +64,7 @@ card.addEventListener('mouseleave', () => {
     card.style.transform = `rotateY(0deg) rotateX(0deg)`;
 });
 
-// Magnet Logic
+// --- 4. MAGNETIC BUTTONS ---
 buttons.forEach(btn => {
     let bx = 0, by = 0, vx = 0, vy = 0; 
     function animate() {
@@ -43,7 +86,7 @@ buttons.forEach(btn => {
     animate();
 });
 
-// Bubble Logic
+// --- 5. BUBBLE LOGIC & MAIN LOOP ---
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 let particles = [];
@@ -82,15 +125,32 @@ class Bubble {
 }
 
 const bubbles = Array.from({length: 20}, () => new Bubble());
+
 function mainLoop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Draw Ripples first (background)
+    ripples.forEach((r, i) => {
+        r.draw();
+        if(r.life <= 0) ripples.splice(i, 1);
+    });
+
+    // Draw Bubbles
     bubbles.forEach(b => b.draw());
+
+    // Draw Pop Particles
     particles.forEach((p, i) => {
         p.x += p.vx; p.y += p.vy; p.l -= 0.05;
         ctx.fillStyle = `rgba(255,255,255,${p.l})`;
         ctx.fillRect(p.x, p.y, 2, 2);
         if(p.l <= 0) particles.splice(i, 1);
     });
+
     requestAnimationFrame(mainLoop);
 }
 mainLoop();
+
+window.addEventListener('resize', () => {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+});
