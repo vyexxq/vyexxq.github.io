@@ -6,57 +6,55 @@ const ctx = canvas.getContext('2d');
 let mouse = { x: -1000, y: -1000 };
 let ripples = [];
 let particles = [];
+let bubbles = [];
 
 window.addEventListener('mousemove', e => { 
     mouse.x = e.clientX; 
     mouse.y = e.clientY; 
 });
 
-// --- 1. SYSTEM CLOCK (Fix: Added padStart for stability) ---
+// --- 1. SYSTEM CLOCK ---
 function updateClock() {
     const clockElement = document.getElementById('clock');
     if (clockElement) {
         const now = new Date();
-        const hours = String(now.getHours()).padStart(2, '0');
-        const minutes = String(now.getMinutes()).padStart(2, '0');
-        const seconds = String(now.getSeconds()).padStart(2, '0');
-        clockElement.textContent = `${hours}:${minutes}:${seconds}`;
+        const h = String(now.getHours()).padStart(2, '0');
+        const m = String(now.getMinutes()).padStart(2, '0');
+        const s = String(now.getSeconds()).padStart(2, '0');
+        clockElement.textContent = `${h}:${m}:${s}`;
     }
 }
 setInterval(updateClock, 1000);
 updateClock();
 
-// --- 2. CLICK RIPPLE (Xbox 360 Warp Effect) ---
+// --- 2. XBOX 360 STYLE RIPPLE ---
 window.addEventListener('mousedown', e => {
-    ripples.push(new Ripple(e.clientX, e.clientY));
+    ripples.push({
+        x: e.clientX,
+        y: e.clientY,
+        r: 0,
+        life: 1.0
+    });
 });
 
-class Ripple {
-    constructor(x, y) {
-        this.x = x;
-        this.y = y;
-        this.r = 0;
-        this.life = 1.0;
-    }
-    draw() {
-        this.r += 5; 
-        this.life -= 0.02;
-        
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
-        ctx.strokeStyle = `rgba(255, 255, 255, ${this.life * 0.3})`;
-        ctx.lineWidth = 15; 
-        ctx.stroke();
-        
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.r - 5, 0, Math.PI * 2);
-        ctx.strokeStyle = `rgba(255, 255, 255, ${this.life * 0.1})`;
-        ctx.lineWidth = 2;
-        ctx.stroke();
-    }
+function drawRipple(r) {
+    r.r += 6; // Fast expansion
+    r.life -= 0.025; // Smooth fade
+
+    ctx.beginPath();
+    ctx.arc(r.x, r.y, r.r, 0, Math.PI * 2);
+    ctx.strokeStyle = `rgba(255, 255, 255, ${r.life * 0.2})`;
+    ctx.lineWidth = 20; // Thick "Lens" effect
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(r.x, r.y, r.r + 10, 0, Math.PI * 2);
+    ctx.strokeStyle = `rgba(255, 255, 255, ${r.life * 0.05})`;
+    ctx.lineWidth = 2;
+    ctx.stroke();
 }
 
-// --- 3. TILT EFFECT ---
+// --- 3. INTERACTION ---
 if (card) {
     card.addEventListener('mousemove', (e) => {
         const rect = card.getBoundingClientRect();
@@ -64,93 +62,102 @@ if (card) {
         const y = (e.clientY - rect.top) / rect.height - 0.5;
         card.style.transform = `rotateY(${x * 10}deg) rotateX(${-y * 10}deg)`;
     });
-
     card.addEventListener('mouseleave', () => {
         card.style.transform = `rotateY(0deg) rotateX(0deg)`;
     });
 }
 
-// --- 4. MAGNETIC BUTTONS ---
 buttons.forEach(btn => {
     let bx = 0, by = 0, vx = 0, vy = 0; 
-    function animate() {
+    function animateBtn() {
         const rect = btn.getBoundingClientRect();
         const cX = rect.left + rect.width / 2;
         const cY = rect.top + rect.height / 2;
         const dist = Math.hypot(mouse.x - cX, mouse.y - cY);
         let tx = 0, ty = 0;
-        if (dist < 70) { 
-            tx = (mouse.x - cX) * 0.45;
-            ty = (mouse.y - cY) * 0.45;
+        if (dist < 80) { 
+            tx = (mouse.x - cX) * 0.4;
+            ty = (mouse.y - cY) * 0.4;
         }
         vx += (tx - bx) * 0.2; vy += (ty - by) * 0.2;
         vx *= 0.7; vy *= 0.7;
         bx += vx; by += vy;
         btn.style.transform = `translate(${bx}px, ${by}px)`;
-        requestAnimationFrame(animate);
+        requestAnimationFrame(animateBtn);
     }
-    animate();
+    animateBtn();
 });
 
-// --- 5. BUBBLE LOGIC & MAIN LOOP ---
-function resize() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-}
-window.addEventListener('resize', resize);
-resize();
-
+// --- 4. BUBBLES ---
 class Bubble {
     constructor() { this.init(); }
     init() {
         this.x = Math.random() * canvas.width;
         this.y = Math.random() * canvas.height;
-        this.size = Math.random() * 18 + 8;
-        this.vx = (Math.random() - 0.5) * 0.5;
-        this.vy = (Math.random() - 0.5) * 0.5;
+        this.size = Math.random() * 15 + 5;
+        this.vx = (Math.random() - 0.5) * 0.4;
+        this.vy = (Math.random() - 0.5) * 0.4;
     }
-    draw() {
+    update() {
         this.x += this.vx; this.y += this.vy;
         if (this.x < 0 || this.x > canvas.width) this.vx *= -1;
         if (this.y < 0 || this.y > canvas.height) this.vy *= -1;
         if (Math.hypot(mouse.x - this.x, mouse.y - this.y) < this.size) this.pop();
-
+    }
+    draw() {
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-        const grad = ctx.createRadialGradient(this.x - this.size/3, this.y - this.size/3, 1, this.x, this.y, this.size);
-        grad.addColorStop(0, "rgba(255, 255, 255, 0.4)"); 
-        grad.addColorStop(0.7, "rgba(255, 255, 255, 0.05)");
-        grad.addColorStop(1, "rgba(255, 255, 255, 0)");
-        ctx.fillStyle = grad;
+        const g = ctx.createRadialGradient(this.x-this.size/3, this.y-this.size/3, 1, this.x, this.y, this.size);
+        g.addColorStop(0, "rgba(255,255,255,0.3)");
+        g.addColorStop(1, "rgba(255,255,255,0)");
+        ctx.fillStyle = g;
         ctx.fill();
-        ctx.strokeStyle = "rgba(255, 255, 255, 0.1)";
+        ctx.strokeStyle = "rgba(255,255,255,0.1)";
         ctx.stroke();
     }
     pop() {
-        for(let i=0; i<6; i++) particles.push({ x: this.x, y: this.y, vx: (Math.random()-0.5)*4, vy: (Math.random()-0.5)*4, l: 1 });
+        for(let i=0; i<5; i++) particles.push({ x: this.x, y: this.y, vx:(Math.random()-0.5)*4, vy:(Math.random()-0.5)*4, l:1 });
         this.init();
     }
 }
 
-const bubbles = Array.from({length: 20}, () => new Bubble());
+function initBubbles() {
+    bubbles = Array.from({length: 25}, () => new Bubble());
+}
 
-function mainLoop() {
+function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    initBubbles();
+}
+window.addEventListener('resize', resize);
+resize();
+
+// --- 5. MAIN LOOP ---
+function main() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    ripples.forEach((r, i) => {
-        r.draw();
-        if(r.life <= 0) ripples.splice(i, 1);
+
+    // 1. Draw Ripples
+    for (let i = ripples.length - 1; i >= 0; i--) {
+        drawRipple(ripples[i]);
+        if (ripples[i].life <= 0) ripples.splice(i, 1);
+    }
+
+    // 2. Draw Bubbles
+    bubbles.forEach(b => {
+        b.update();
+        b.draw();
     });
 
-    bubbles.forEach(b => b.draw());
-
-    particles.forEach((p, i) => {
-        p.x += p.vx; p.y += p.vy; p.l -= 0.05;
+    // 3. Draw Particles
+    for (let i = particles.length - 1; i >= 0; i--) {
+        let p = particles[i];
+        p.x += p.vx; p.y += p.vy; p.l -= 0.04;
         ctx.fillStyle = `rgba(255,255,255,${p.l})`;
         ctx.fillRect(p.x, p.y, 2, 2);
-        if(p.l <= 0) particles.splice(i, 1);
-    });
+        if (p.l <= 0) particles.splice(i, 1);
+    }
 
-    requestAnimationFrame(mainLoop);
+    requestAnimationFrame(main);
 }
-mainLoop();
+main();
