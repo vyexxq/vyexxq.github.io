@@ -3,6 +3,11 @@
  * Features: Aero Cursor, Physics-based Draggable Card, 
  * Crack/Shatter System, Gravity Shards, and Bubble Pop.
  */
+// Clean URL: Removes index.html from the browser bar automatically
+if (window.location.pathname.endsWith("index.html")) {
+    const cleanUrl = window.location.pathname.replace("index.html", "");
+    window.history.replaceState({}, document.title, cleanUrl);
+}
 
 const card = document.getElementById('tilt-card');
 const cursor = document.getElementById('custom-cursor');
