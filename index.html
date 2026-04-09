@@ -7,48 +7,42 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div id="custom-cursor"></div>
+    <div id="custom-cursor" aria-hidden="true"></div>
 
-    <div class="background-streams">
-        <div class="stream s1"></div>
-        <div class="stream s2"></div>
-        <div class="stream s3"></div>
-        <div class="stream s4"></div>
+    <div class="background-waves" aria-hidden="true">
+        <canvas id="flow-field"></canvas>
+        <div class="bg-vignette"></div>
     </div>
 
-    <canvas id="bubbleCanvas"></canvas>
+    <div class="film-grain" aria-hidden="true"></div>
+
+    <div id="bubble-layer" aria-hidden="true"></div>
+
     <div id="shatter-container"></div>
     <div id="card-outline"></div>
 
-    <main class="container" id="main-ui">
+    <main class="container">
         <div class="glass-card draggable" id="tilt-card">
             <div class="card-header">
                 <p class="stats" id="date">00/00/00</p>
                 <div class="system-time" id="clock">00:00:00</div>
             </div>
-            
+
             <h1>Hi! My name is vyexx</h1>
             <p class="subtitle">I'm a musician, vocalist, and an aspiring game developer.</p>
-            
+
             <section class="about-section">
                 <h3>About vyexx</h3>
                 <p>vyexx is an artist born in 2008. Inspired by hyperpop, electric sounds, house, and breakcore.</p>
             </section>
 
             <div class="button-group">
-                <a href="music/" class="mag-button"><span class="gloss"></span>Explore Music</a>
-                <a href="socials/" class="mag-button"><span class="gloss"></span>Connect</a>
-                <a href="contact/" class="mag-button"><span class="gloss"></span>Contact</a>
+                <a href="pages/music.html" class="mag-button">Explore Music</a>
+                <a href="pages/socials.html" class="mag-button">Connect</a>
+                <a href="pages/contact.html" class="mag-button">Contact</a>
             </div>
         </div>
     </main>
-
-    <svg style="display: none;">
-        <filter id="crack-filter">
-            <feTurbulence type="fractalNoise" baseFrequency="0.6" numOctaves="3" result="noise" />
-            <feDisplacementMap in="SourceGraphic" in2="noise" scale="0" id="crack-displace" />
-        </filter>
-    </svg>
 
     <script src="script.js"></script>
 </body>
