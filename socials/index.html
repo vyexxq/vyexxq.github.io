@@ -7,50 +7,47 @@
     <link rel="stylesheet" href="../style.css">
 </head>
 <body>
-    <div id="custom-cursor"></div>
-    <div class="background-streams">
+    <div id="custom-cursor" aria-hidden="true"></div>
+
+    <div class="background-streams" aria-hidden="true">
+        <canvas id="flow-field"></canvas>
         <div class="stream s1"></div>
         <div class="stream s2"></div>
         <div class="stream s3"></div>
         <div class="stream s4"></div>
     </div>
-    <canvas id="bubbleCanvas"></canvas>
+
+    <div id="bubble-layer" aria-hidden="true"></div>
+
     <div id="shatter-container"></div>
 
     <main class="container">
         <div class="glass-card draggable" id="tilt-card" style="max-width: 550px;">
             <h1 style="font-size: 1.8rem; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 10px;">Social Directory</h1>
-            
+
             <div class="social-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px;">
-                <a href="https://youtube.com/c/noxly" target="_blank" class="mag-button">
+                <a href="https://youtube.com/c/noxly" target="_blank" rel="noopener noreferrer" class="mag-button">
                     <span class="gloss"></span>YouTube
                 </a>
-                <a href="https://soundcloud.com/vyexx" target="_blank" class="mag-button">
+                <a href="https://soundcloud.com/vyexx" target="_blank" rel="noopener noreferrer" class="mag-button">
                     <span class="gloss"></span>SoundCloud
                 </a>
-                <a href="https://instagram.com/vyexx__/" target="_blank" class="mag-button">
+                <a href="https://instagram.com/vyexx__/" target="_blank" rel="noopener noreferrer" class="mag-button">
                     <span class="gloss"></span>Instagram
                 </a>
-                <a href="https://roblox.com/users/4092832555/profile" target="_blank" class="mag-button">
+                <a href="https://roblox.com/users/4092832555/profile" target="_blank" rel="noopener noreferrer" class="mag-button">
                     <span class="gloss"></span>Roblox
                 </a>
             </div>
 
             <div class="button-group">
-                <a href="../" class="mag-button">
+                <a href="../index.html" class="mag-button">
                     <span class="gloss"></span>
                     Back Home
                 </a>
             </div>
         </div>
     </main>
-
-    <svg style="display: none;">
-        <filter id="crack-filter">
-            <feTurbulence type="fractalNoise" baseFrequency="0.6" numOctaves="3" result="noise" />
-            <feDisplacementMap in="SourceGraphic" in2="noise" scale="0" id="crack-displace" />
-        </filter>
-    </svg>
 
     <script src="../script.js"></script>
 </body>
