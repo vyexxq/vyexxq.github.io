@@ -1,5 +1,51 @@
 /* vyexx — shared script (home + subpages). Safe when optional DOM nodes are missing. */
 
+const MOOD_KEYS = ['ocean', 'forest', 'frost', 'aurora'];
+
+(function syncMoodFromStorage() {
+    try {
+        const s = localStorage.getItem('vyexx-mood');
+        if (s && MOOD_KEYS.includes(s)) document.documentElement.setAttribute('data-mood', s);
+    } catch (_) {
+        /* ignore */
+    }
+    if (!document.documentElement.getAttribute('data-mood')) {
+        document.documentElement.setAttribute('data-mood', 'ocean');
+    }
+})();
+
+/** Canvas ribbon colors per mood (pairs with html[data-mood]) */
+const VYEXX_MOOD_FLOW = {
+    ocean: {
+        bg: [2, 14, 32],
+        hi: [120, 210, 255],
+        mid: [40, 95, 140],
+        deep: [0, 0, 0],
+        hiMul: 1,
+    },
+    forest: {
+        bg: [4, 20, 14],
+        hi: [130, 255, 200],
+        mid: [35, 110, 75],
+        deep: [0, 10, 6],
+        hiMul: 0.92,
+    },
+    frost: {
+        bg: [12, 14, 22],
+        hi: [235, 245, 255],
+        mid: [130, 140, 165],
+        deep: [0, 0, 0],
+        hiMul: 1.08,
+    },
+    aurora: {
+        bg: [10, 6, 26],
+        hi: [210, 160, 255],
+        mid: [85, 55, 150],
+        deep: [0, 0, 0],
+        hiMul: 1,
+    },
+};
+
 const card = document.getElementById('tilt-card');
 const cursor = document.getElementById('custom-cursor');
 const shatterContainer = document.getElementById('shatter-container');
@@ -39,6 +85,7 @@ let isDragging = false;
 let dragOffset = { x: 0, y: 0 };
 let dragStart = { x: 0, y: 0 };
 let lastPointerLocal = { x: 0, y: 0 };
+let activeCardPointerId = null;
 let clickCount = 0;
 let shards = [];
 
@@ -174,6 +221,7 @@ function addGlassCrackAtLocal(localX, localY) {
         g.appendChild(main);
     }
     svg.appendChild(g);
+    playGlassTick();
 }
 
 // --- BUBBLES ---
@@ -329,6 +377,17 @@ startBubbles();
     const ctx = canvas.getContext('2d', { alpha: false, desynchronized: true });
     if (!ctx) return;
 
+    let flowMoodKey = document.documentElement.getAttribute('data-mood') || 'ocean';
+    if (!MOOD_KEYS.includes(flowMoodKey)) flowMoodKey = 'ocean';
+
+    function flowPalette() {
+        return VYEXX_MOOD_FLOW[flowMoodKey] || VYEXX_MOOD_FLOW.ocean;
+    }
+
+    window.vyexxSetFlowMood = (k) => {
+        flowMoodKey = MOOD_KEYS.includes(k) ? k : 'ocean';
+    };
+
     const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const saveData =
         typeof navigator !== 'undefined' &&
@@ -365,10 +424,10 @@ startBubbles();
                 depth,
                 drift: 0,
                 driftVel: 0,
-                a1: rnd(22, 52) * (0.55 + depth * 0.35),
-                a2: rnd(12, 32),
-                a3: rnd(7, 22),
-                a4: rnd(4, 12),
+                a1: rnd(36, 84) * (0.65 + depth * 0.45),
+                a2: rnd(18, 44),
+                a3: rnd(10, 30),
+                a4: rnd(6, 18),
                 k1: rnd(0.0035, 0.014),
                 k2: rnd(0.006, 0.02),
                 k3: rnd(0.0015, 0.009),
@@ -378,10 +437,10 @@ startBubbles();
                 p1: rnd(0, Math.PI * 2),
                 p2: rnd(0, Math.PI * 2),
                 p3: rnd(0, Math.PI * 2),
-                thickness: rnd(52, 92),
+                thickness: rnd(84, 140),
                 alpha: rnd(0.22, 0.42) * (0.75 + depth * 0.25),
                 floatSpeed: rnd(0.045, 0.1),
-                floatAmp: rnd(6, 16),
+                floatAmp: rnd(10, 24),
             });
         }
     }
@@ -415,7 +474,7 @@ startBubbles();
     }
 
     function drawRibbon(timeSec, s) {
-        const step = 18;
+        const step = 20;
         const margin = 120;
         const top = [];
         for (let x = -margin; x <= w + margin; x += step) {
@@ -436,11 +495,12 @@ startBubbles();
             bottom.push({ x: p.x, y: bt });
         }
 
+        const p = flowPalette();
         const g = ctx.createLinearGradient(0, minY - 24, 0, maxY + 32);
-        const hi = 0.06 + s.depth * 0.14;
-        g.addColorStop(0, `rgba(255,255,255,${hi})`);
-        g.addColorStop(0.4, `rgba(120,120,120,${0.04 + s.depth * 0.08})`);
-        g.addColorStop(1, `rgba(0,0,0,${0.28 + s.depth * 0.22})`);
+        const hiA = (0.05 + s.depth * 0.12) * p.hiMul;
+        g.addColorStop(0, `rgba(${p.hi[0]},${p.hi[1]},${p.hi[2]},${hiA})`);
+        g.addColorStop(0.4, `rgba(${p.mid[0]},${p.mid[1]},${p.mid[2]},${0.05 + s.depth * 0.1})`);
+        g.addColorStop(1, `rgba(${p.deep[0]},${p.deep[1]},${p.deep[2]},${0.3 + s.depth * 0.22})`);
 
         ctx.beginPath();
         ctx.moveTo(top[0].x, top[0].y);
@@ -476,7 +536,8 @@ startBubbles();
     });
 
     function drawStatic(timeSec) {
-        ctx.fillStyle = '#000000';
+        const p = flowPalette();
+        ctx.fillStyle = `rgb(${p.bg[0]},${p.bg[1]},${p.bg[2]})`;
         ctx.fillRect(0, 0, w, h);
         for (let i = 0; i < strands.length; i++) drawRibbon(timeSec, strands[i]);
     }
@@ -489,7 +550,8 @@ startBubbles();
         frameSkip ^= 1;
         if (frameSkip === 0) updateDrifts();
 
-        ctx.fillStyle = '#000000';
+        const p = flowPalette();
+        ctx.fillStyle = `rgb(${p.bg[0]},${p.bg[1]},${p.bg[2]})`;
         ctx.fillRect(0, 0, w, h);
         for (let i = 0; i < strands.length; i++) drawRibbon(timeSec, strands[i]);
     }
@@ -505,10 +567,11 @@ startBubbles();
 
 // --- DRAG & CRACK CLICKS ---
 if (card) {
-    card.addEventListener('mousedown', (e) => {
-        if (e.button !== 0) return;
+    card.addEventListener('pointerdown', (e) => {
+        if (e.pointerType === 'mouse' && e.button !== 0) return;
         if (e.target.closest('.mag-button')) return;
         if (e.target.closest('a[href]')) return;
+        activeCardPointerId = e.pointerId;
         isDragging = true;
         dragStart.x = e.clientX;
         dragStart.y = e.clientY;
@@ -517,12 +580,14 @@ if (card) {
         const r = card.getBoundingClientRect();
         lastPointerLocal.x = e.clientX - r.left;
         lastPointerLocal.y = e.clientY - r.top;
+        card.setPointerCapture(e.pointerId);
+        e.preventDefault();
     });
 }
 
-function onGlobalMouseUp(e) {
+function onGlobalPointerUp(e) {
     if (!card) return;
-    if (isDragging) {
+    if (isDragging && (activeCardPointerId === null || activeCardPointerId === e.pointerId)) {
         if (e) {
             const dist = Math.hypot(e.clientX - dragStart.x, e.clientY - dragStart.y);
             if (dist < 12) {
@@ -532,23 +597,35 @@ function onGlobalMouseUp(e) {
             }
         }
         isDragging = false;
+        activeCardPointerId = null;
     }
     shards.forEach((s) => {
-        s.isDragging = false;
+        if (s.isDragging && (s.activePointerId === null || s.activePointerId === e.pointerId)) {
+            s.isDragging = false;
+            s.activePointerId = null;
+        }
     });
 }
 
-window.addEventListener('mouseup', onGlobalMouseUp);
+window.addEventListener('pointermove', (e) => {
+    mouse.x = e.clientX;
+    mouse.y = e.clientY;
+});
+window.addEventListener('pointerup', onGlobalPointerUp);
+window.addEventListener('pointercancel', onGlobalPointerUp);
 window.addEventListener('blur', () => {
     isDragging = false;
+    activeCardPointerId = null;
     shards.forEach((s) => {
         s.isDragging = false;
+        s.activePointerId = null;
     });
 });
 
 // --- SHATTER ---
 function shatter() {
     if (!card) return;
+    playGlassShatter();
     const ol = ensureCardOutline();
     const r = card.getBoundingClientRect();
     const fullHtml = card.innerHTML;
@@ -601,17 +678,20 @@ function shatter() {
                 h: ch,
                 isDragging: false,
                 isSnapped: false,
+                activePointerId: null,
                 offset: { x: 0, y: 0 },
             };
 
-            shardEl.addEventListener('mousedown', (ev) => {
-                if (ev.button !== 0) return;
+            shardEl.addEventListener('pointerdown', (ev) => {
+                if (ev.pointerType === 'mouse' && ev.button !== 0) return;
                 ev.preventDefault();
                 sObj.isDragging = true;
                 sObj.isSnapped = false;
+                sObj.activePointerId = ev.pointerId;
                 shardEl.classList.remove('snapped');
                 sObj.offset.x = ev.clientX - sObj.x;
                 sObj.offset.y = ev.clientY - sObj.y;
+                shardEl.setPointerCapture(ev.pointerId);
             });
 
             shards.push(sObj);
@@ -707,6 +787,258 @@ function animate() {
     lastMouse.y = mouse.y;
     requestAnimationFrame(animate);
 }
+
+// --- Mood scenes UI + audio + magnetic (declared before sounds use them) ---
+let currentMoodKey = document.documentElement.getAttribute('data-mood') || 'ocean';
+if (!MOOD_KEYS.includes(currentMoodKey)) currentMoodKey = 'ocean';
+
+const prefersReducedSound = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+let audioCtx = null;
+let masterGain = null;
+let ambienceNodes = null;
+
+function ensureAudioCtx() {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return null;
+    if (!audioCtx) {
+        audioCtx = new AC();
+        masterGain = audioCtx.createGain();
+        masterGain.gain.value = prefersReducedSound ? 0 : 0.22;
+        masterGain.connect(audioCtx.destination);
+    }
+    return audioCtx;
+}
+
+function resumeAudio() {
+    const ctx = ensureAudioCtx();
+    if (!ctx || !masterGain) return Promise.resolve(null);
+    if (ctx.state === 'suspended') return ctx.resume().then(() => ctx);
+    return Promise.resolve(ctx);
+}
+
+function playButtonSoft() {
+    if (prefersReducedSound) return;
+    const ctx = ensureAudioCtx();
+    if (!ctx || !masterGain) return;
+    const t0 = ctx.currentTime;
+    const o = ctx.createOscillator();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(700, t0);
+    o.frequency.exponentialRampToValueAtTime(360, t0 + 0.048);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0, t0);
+    g.gain.linearRampToValueAtTime(0.1, t0 + 0.003);
+    g.gain.exponentialRampToValueAtTime(0.0006, t0 + 0.09);
+    o.connect(g);
+    g.connect(masterGain);
+    o.start(t0);
+    o.stop(t0 + 0.11);
+}
+
+function playGlassTick() {
+    if (prefersReducedSound) return;
+    const ctx = ensureAudioCtx();
+    if (!ctx || !masterGain) return;
+    const t0 = ctx.currentTime;
+    const len = Math.floor(ctx.sampleRate * 0.055);
+    const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len);
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    const hp = ctx.createBiquadFilter();
+    hp.type = 'highpass';
+    hp.frequency.value = 2000;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.09, t0);
+    g.gain.exponentialRampToValueAtTime(0.0004, t0 + 0.05);
+    src.connect(hp);
+    hp.connect(g);
+    g.connect(masterGain);
+    src.start(t0);
+}
+
+function playGlassShatter() {
+    if (prefersReducedSound) return;
+    const ctx = ensureAudioCtx();
+    if (!ctx || !masterGain) return;
+    const t0 = ctx.currentTime;
+    const len = Math.floor(ctx.sampleRate * 0.32);
+    const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 0.35);
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    const bp = ctx.createBiquadFilter();
+    bp.type = 'bandpass';
+    bp.frequency.setValueAtTime(2400, t0);
+    bp.frequency.exponentialRampToValueAtTime(380, t0 + 0.22);
+    bp.Q.value = 0.75;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0, t0);
+    g.gain.linearRampToValueAtTime(0.2, t0 + 0.018);
+    g.gain.exponentialRampToValueAtTime(0.0008, t0 + 0.3);
+    src.connect(bp);
+    bp.connect(g);
+    g.connect(masterGain);
+    src.start(t0);
+    const o = ctx.createOscillator();
+    o.type = 'triangle';
+    o.frequency.setValueAtTime(130, t0);
+    o.frequency.exponentialRampToValueAtTime(38, t0 + 0.18);
+    const g2 = ctx.createGain();
+    g2.gain.setValueAtTime(0, t0);
+    g2.gain.linearRampToValueAtTime(0.055, t0 + 0.012);
+    g2.gain.exponentialRampToValueAtTime(0.0004, t0 + 0.2);
+    o.connect(g2);
+    g2.connect(masterGain);
+    o.start(t0);
+    o.stop(t0 + 0.22);
+}
+
+const AMBIENCE_PRESETS = {
+    ocean: { freq: 360, wet: 0.082, lfoF: 0.11, lfoD: 155 },
+    forest: { freq: 510, wet: 0.052, lfoF: 0.17, lfoD: 92 },
+    frost: { freq: 690, wet: 0.036, lfoF: 0.24, lfoD: 210 },
+    aurora: { freq: 275, wet: 0.058, lfoF: 0.088, lfoD: 105 },
+};
+
+function startAmbienceForMood(moodKey) {
+    if (prefersReducedSound || ambienceNodes) return;
+    const ctx = ensureAudioCtx();
+    if (!ctx || !masterGain) return;
+    const t0 = ctx.currentTime;
+    const pr = AMBIENCE_PRESETS[moodKey] || AMBIENCE_PRESETS.ocean;
+    const n = Math.floor(ctx.sampleRate * 4);
+    const buf = ctx.createBuffer(1, n, ctx.sampleRate);
+    const ch = buf.getChannelData(0);
+    for (let i = 0; i < n; i++) ch[i] = Math.random() * 2 - 1;
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    src.loop = true;
+    const band = ctx.createBiquadFilter();
+    band.type = 'bandpass';
+    band.frequency.value = pr.freq;
+    band.Q.value = 0.62;
+    const wet = ctx.createGain();
+    wet.gain.value = pr.wet;
+    const lfo = ctx.createOscillator();
+    lfo.type = 'sine';
+    lfo.frequency.value = pr.lfoF;
+    const lfoGain = ctx.createGain();
+    lfoGain.gain.value = pr.lfoD;
+    lfo.connect(lfoGain);
+    lfoGain.connect(band.frequency);
+    src.connect(band);
+    band.connect(wet);
+    wet.connect(masterGain);
+    src.start(t0);
+    lfo.start(t0);
+    ambienceNodes = { band, wet, lfo, lfoGain };
+}
+
+function updateAmbienceForMood(moodKey) {
+    if (!ambienceNodes || !audioCtx) return;
+    const pr = AMBIENCE_PRESETS[moodKey] || AMBIENCE_PRESETS.ocean;
+    const t = audioCtx.currentTime;
+    ambienceNodes.band.frequency.linearRampToValueAtTime(pr.freq, t + 1);
+    ambienceNodes.wet.gain.linearRampToValueAtTime(pr.wet, t + 1);
+    ambienceNodes.lfo.frequency.linearRampToValueAtTime(pr.lfoF, t + 1);
+    ambienceNodes.lfoGain.gain.linearRampToValueAtTime(pr.lfoD, t + 1);
+}
+
+function refreshMoodPressedStates() {
+    const k = document.documentElement.getAttribute('data-mood') || 'ocean';
+    document.querySelectorAll('.mood-dot').forEach((btn) => {
+        btn.setAttribute('aria-pressed', btn.dataset.mood === k ? 'true' : 'false');
+    });
+}
+
+function applyMood(key) {
+    if (!MOOD_KEYS.includes(key)) return;
+    currentMoodKey = key;
+    document.documentElement.setAttribute('data-mood', key);
+    try {
+        localStorage.setItem('vyexx-mood', key);
+    } catch (_) {
+        /* ignore */
+    }
+    if (window.vyexxSetFlowMood) window.vyexxSetFlowMood(key);
+    refreshMoodPressedStates();
+    updateAmbienceForMood(key);
+}
+
+function ensureMoodDock() {
+    if (document.getElementById('mood-dock')) return;
+    const dock = document.createElement('div');
+    dock.id = 'mood-dock';
+    dock.setAttribute('role', 'toolbar');
+    dock.setAttribute('aria-label', 'Mood scenes');
+    const lab = document.createElement('span');
+    lab.className = 'mood-dock__label';
+    lab.textContent = 'Mood';
+    dock.appendChild(lab);
+    const specs = [
+        ['ocean', 'mood-dot--ocean', 'Deep ocean'],
+        ['forest', 'mood-dot--forest', 'Forest night'],
+        ['frost', 'mood-dot--frost', 'Frost white'],
+        ['aurora', 'mood-dot--aurora', 'Aurora haze'],
+    ];
+    for (let i = 0; i < specs.length; i++) {
+        const [mood, cls, title] = specs[i];
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = `mood-dot ${cls}`;
+        b.dataset.mood = mood;
+        b.title = title;
+        b.setAttribute('aria-label', `${title} mood`);
+        b.addEventListener('click', () => applyMood(mood));
+        dock.appendChild(b);
+    }
+    document.body.appendChild(dock);
+    refreshMoodPressedStates();
+}
+
+const magneticOn = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const MAG_STR = 0.34;
+const MAG_RAD = 175;
+
+function magneticLoop() {
+    if (magneticOn) {
+        const nodes = document.querySelectorAll('.mag-button, .mood-dot');
+        for (let i = 0; i < nodes.length; i++) {
+            const el = nodes[i];
+            const r = el.getBoundingClientRect();
+            const cx = r.left + r.width / 2;
+            const cy = r.top + r.height / 2;
+            const dx = mouse.x - cx;
+            const dy = mouse.y - cy;
+            const dist = Math.hypot(dx, dy) + 0.001;
+            const pull = Math.min(13, (MAG_RAD / dist) * MAG_STR * 7);
+            const tx = (dx / dist) * pull;
+            const ty = (dy / dist) * pull;
+            el.style.transform = `translate3d(${tx}px, ${ty}px, 0)`;
+        }
+    }
+    requestAnimationFrame(magneticLoop);
+}
+
+document.addEventListener(
+    'pointerdown',
+    (e) => {
+        resumeAudio().then(() => {
+            if (prefersReducedSound || ambienceNodes) return;
+            startAmbienceForMood(currentMoodKey);
+        });
+        const t = e.target;
+        if (t && t.closest && t.closest('.mag-button, .mood-dot')) playButtonSoft();
+    },
+    true
+);
+
+ensureMoodDock();
+magneticLoop();
 
 function checkHealStatus() {
     if (!card || shards.length === 0 || !shards.every((s) => s.isSnapped)) return;
