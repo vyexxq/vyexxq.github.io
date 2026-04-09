@@ -1,65 +1,405 @@
-/* --- Core Layout --- */
-body, html {
-    margin: 0; padding: 0; width: 100%; height: 100%;
-    background: radial-gradient(circle at center, #151515 0%, #000 100%);
-    color: white; font-family: "Segoe UI", Tahoma, sans-serif;
-    overflow: hidden; perspective: 1200px;
-    cursor: none !important; user-select: none;
+/* --- Global Reset & Anti-Highlight --- */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    user-select: none !important;
+    -webkit-user-select: none !important;
+    -webkit-user-drag: none;
+    cursor: none !important;
 }
 
-/* --- Custom Aero Cursor --- */
+body,
+html {
+    width: 100%;
+    height: 100%;
+    min-height: 100dvh;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    background: #000000;
+    color: #e8e8e8;
+    font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    overflow: hidden;
+    position: relative;
+}
+
+/* --- Aero Cursor --- */
 #custom-cursor {
-    width: 22px; height: 22px; background: rgba(255, 255, 255, 0.3);
-    border: 1px solid rgba(255, 255, 255, 0.6); border-radius: 50%;
-    position: fixed; pointer-events: none; z-index: 10000;
-    backdrop-filter: blur(6px); transform: translate(-50%, -50%);
+    width: 22px;
+    height: 22px;
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    border-radius: 50%;
+    position: fixed;
+    pointer-events: none;
+    z-index: 10000;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    transform: translate(-50%, -50%);
     box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
 }
 
-/* --- Background Visuals --- */
-.background-streams { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -2; filter: blur(40px); }
-.stream { position: absolute; width: 400%; height: 35%; background: linear-gradient(180deg, transparent 0%, rgba(255, 255, 255, 0.05) 20%, rgba(255, 255, 255, 0.1) 50%, rgba(255, 255, 255, 0.05) 80%, transparent 100%); animation: flow 25s linear infinite; transform: rotate(-12deg); }
-@keyframes flow { from { transform: translateX(-50%) rotate(-12deg); } to { transform: translateX(0%) rotate(-12deg); } }
+/* --- Background: procedural flow (canvas) + vignette --- */
+.background-waves,
+.background-streams {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    pointer-events: none;
+    background: #000000;
+}
 
-#bubbleCanvas { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -1; pointer-events: none; }
+.background-streams .stream {
+    display: none;
+}
 
-.container { width: 100%; height: 100%; position: relative; display: flex; align-items: center; justify-content: center; pointer-events: none; }
+#flow-field {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    z-index: 1;
+    pointer-events: none;
+    /* Avoid extra blur pass on the full canvas (GPU-heavy on low-end machines) */
+    filter: saturate(0);
+}
+
+.bg-vignette {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    background:
+        radial-gradient(ellipse 125% 90% at 50% -8%, rgba(18, 18, 18, 0.5) 0%, transparent 58%),
+        radial-gradient(ellipse 95% 80% at 50% 108%, rgba(0, 0, 0, 0.92) 0%, transparent 55%),
+        radial-gradient(ellipse 65% 55% at 50% 45%, transparent 0%, rgba(0, 0, 0, 0.35) 100%);
+    pointer-events: none;
+}
+
+/* Subtle film texture — reads “camera / glass” not “noise plugin” */
+.film-grain {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    opacity: 0.045;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
+    background-repeat: repeat;
+    background-size: 180px 180px;
+}
+
+/* --- Bubbles: always soft / optical; fade in; never “teleport” on --- */
+#bubble-layer {
+    position: fixed;
+    inset: 0;
+    z-index: 3;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.bubble {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: auto;
+    cursor: none;
+    opacity: 0;
+    /* Glossy sphere read through haze — no hard edge */
+    background: radial-gradient(
+        circle at 34% 32%,
+        rgba(255, 255, 255, 0.45) 0%,
+        rgba(210, 210, 210, 0.08) 38%,
+        rgba(60, 60, 60, 0.06) 62%,
+        rgba(0, 0, 0, 0.15) 100%
+    );
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow:
+        inset 0 0 20px rgba(255, 255, 255, 0.12),
+        0 8px 32px rgba(0, 0, 0, 0.45),
+        0 0 24px rgba(255, 255, 255, 0.04);
+    will-change: transform, opacity, filter;
+}
+
+.bubble.is-live {
+    animation:
+        bubbleReveal 1.45s cubic-bezier(0.22, 1, 0.36, 1) forwards,
+        bubbleFloat var(--float-dur, 18s) ease-in-out var(--float-delay, 1.45s) infinite;
+}
+
+.bubble.popping {
+    pointer-events: none;
+    animation: bubblePopSoft 0.55s cubic-bezier(0.4, 0, 0.2, 1) forwards !important;
+}
+
+@keyframes bubbleReveal {
+    0% {
+        opacity: 0;
+        filter: blur(16px);
+    }
+    100% {
+        opacity: var(--b-op, 0.42);
+        filter: blur(var(--blur, 5px));
+    }
+}
+
+@keyframes bubbleFloat {
+    0%,
+    100% {
+        transform: translate3d(0, 0, 0);
+    }
+    20% {
+        transform: translate3d(var(--dx1, 10px), var(--dy1, -14px), 0);
+    }
+    45% {
+        transform: translate3d(var(--dx2, -8px), var(--dy2, 8px), 0);
+    }
+    70% {
+        transform: translate3d(var(--dx3, 6px), var(--dy3, 12px), 0);
+    }
+}
+
+@keyframes bubblePopSoft {
+    0% {
+        opacity: var(--b-op, 0.45);
+        filter: blur(var(--blur, 5px));
+        transform: scale3d(1, 1, 1);
+    }
+    100% {
+        opacity: 0;
+        filter: blur(18px);
+        transform: scale3d(1.12, 1.12, 1);
+    }
+}
+
+.bubble-spark {
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.35);
+    pointer-events: none;
+    filter: blur(2px);
+    box-shadow: 0 0 12px rgba(255, 255, 255, 0.35);
+    animation: sparkFadeSoft 0.55s ease-out forwards;
+}
+
+@keyframes sparkFadeSoft {
+    from {
+        transform: translate3d(0, 0, 0) scale(1);
+        opacity: 0.7;
+    }
+    to {
+        transform: translate3d(var(--sx), var(--sy), 0) scale(0.2);
+        opacity: 0;
+    }
+}
+
+/* --- Layout --- */
+.container {
+    position: relative;
+    z-index: 10;
+    width: 100%;
+    height: 100%;
+    min-height: 100dvh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+}
 
 /* --- The Glass Card --- */
 .glass-card {
-    background: rgba(255, 255, 255, 0.08); backdrop-filter: blur(25px);
-    border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 24px;
-    padding: 30px; width: 380px; position: absolute;
-    box-shadow: 0 30px 60px rgba(0,0,0,0.5); z-index: 10;
-    pointer-events: auto; transition: filter 0.1s ease-out;
+    background: rgba(24, 24, 24, 0.42);
+    backdrop-filter: blur(28px);
+    -webkit-backdrop-filter: blur(28px);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 24px;
+    padding: 30px;
+    width: min(380px, calc(100vw - 40px));
+    position: absolute;
+    box-shadow:
+        0 28px 56px rgba(0, 0, 0, 0.75),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    z-index: 10;
+    pointer-events: auto;
+    isolation: isolate;
+}
+
+/* Sharp fracture lines drawn at click; pointer-events none so UI stays usable */
+.glass-crack-overlay {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    z-index: 20;
+    overflow: hidden;
+}
+
+.glass-crack-overlay svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.glass-card.draggable {
+    cursor: grab;
+}
+
+.glass-card.draggable:active {
+    cursor: grabbing;
 }
 
 .card-header {
-    display: flex; justify-content: space-between; align-items: baseline;
-    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    opacity: 0.65;
+    font-size: 0.8rem;
+    font-family: ui-monospace, "Cascadia Code", monospace;
+    color: #b8b8b8;
 }
 
-.stats, .system-time {
-    font-size: 0.75rem; letter-spacing: 2px; opacity: 0.6; margin: 0;
+.glass-card h1 {
+    font-weight: 700;
+    color: #ffffff;
+    font-size: 1.45rem;
+    line-height: 1.25;
 }
 
-/* --- Ghost Outline --- */
+.subtitle {
+    opacity: 0.85;
+    margin-top: 8px;
+    font-size: 0.95rem;
+}
+
+.about-section {
+    margin-top: 22px;
+}
+
+.about-section h3 {
+    font-size: 0.95rem;
+    margin-bottom: 8px;
+    opacity: 0.9;
+}
+
+.about-section p {
+    font-size: 0.88rem;
+    line-height: 1.45;
+    opacity: 0.75;
+}
+
+.button-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 25px;
+}
+
+.mag-button {
+    position: relative;
+    overflow: hidden;
+    padding: 14px;
+    background: linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.12) 0%,
+        rgba(255, 255, 255, 0.03) 100%
+    );
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    color: #f5f5f5;
+    text-decoration: none;
+    text-align: center;
+    border-radius: 12px;
+    transition: background 0.2s, border-color 0.2s, filter 0.2s;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.mag-button .gloss {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(
+        125deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.12) 42%,
+        transparent 62%
+    );
+    opacity: 0.65;
+    mix-blend-mode: soft-light;
+}
+
+.mag-button:hover {
+    background: linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.18) 0%,
+        rgba(255, 255, 255, 0.06) 100%
+    );
+    border-color: rgba(255, 255, 255, 0.28);
+}
+
+/* --- Shatter Mechanics --- */
 #card-outline {
-    position: absolute; border: 2px dashed rgba(255, 255, 255, 0.1);
-    border-radius: 24px; pointer-events: none; display: none; z-index: 1;
+    position: fixed;
+    border: 2px dashed rgba(255, 255, 255, 0.12);
+    border-radius: 24px;
+    pointer-events: none;
+    display: none;
+    z-index: 4;
 }
 
-/* --- Buttons --- */
-.button-group { display: flex; flex-direction: column; gap: 10px; width: 100%; margin-top: 20px; }
-.mag-button { display: block; position: relative; padding: 14px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px; color: white; text-decoration: none; text-align: center; backdrop-filter: blur(5px); overflow: hidden; transition: 0.2s; }
-.mag-button:hover { background: rgba(255, 255, 255, 0.1); transform: scale(1.02); }
-.gloss { position: absolute; top: 0; left: 0; width: 100%; height: 50%; background: linear-gradient(180deg, rgba(255,255,255,0.1) 0%, transparent 100%); }
+#shatter-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 5;
+}
 
-/* --- Shards & Shatter --- */
-#shatter-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5; }
 .shard {
-    position: absolute; background: rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.2);
-    z-index: 20; pointer-events: auto;
+    position: absolute;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    pointer-events: auto;
+    z-index: 20;
+    transition:
+        border 0.2s,
+        box-shadow 0.2s,
+        opacity 0.6s ease-in-out;
 }
-.shard.snapped { border-color: rgba(255, 255, 255, 0.6); box-shadow: 0 0 15px rgba(255, 255, 255, 0.2); }
+
+.shard-content-inner {
+    position: absolute;
+    pointer-events: none;
+    /* Width set in JS from the live card width so shards match Music / Socials layouts */
+    width: 380px;
+    max-width: none;
+}
+
+.shard.snapped {
+    border-color: rgba(255, 255, 255, 0.85);
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.28);
+}
+
+.shard.healing {
+    border-color: transparent !important;
+    box-shadow: none !important;
+    opacity: 0;
+    transition: opacity 0.45s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .film-grain {
+        animation: none !important;
+    }
+
+    .bubble.is-live {
+        animation: none !important;
+        opacity: var(--b-op, 0.42);
+        filter: blur(var(--blur, 5px));
+    }
+}
