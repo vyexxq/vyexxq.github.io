@@ -89,12 +89,26 @@
       max-width: 36rem;
     }
 
+    .shop {
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+      margin-top: 0.25rem;
+    }
+
+    .shop p {
+      font-size: clamp(0.98rem, 2.4vw, 1.15rem);
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      line-height: 1.45;
+      color: var(--mute);
+      max-width: 36rem;
+    }
+
     .links {
       display: flex;
       flex-wrap: wrap;
       gap: 1rem 1.4rem;
-      margin-top: 0.4rem;
-      padding-top: 0.4rem;
     }
 
     a {
@@ -147,10 +161,13 @@
       </div>
     </section>
 
-    <div class="links">
-      <a href="https://payhip.com/vyexx" target="_blank" rel="noopener noreferrer">payhip</a>
-      <a href="/music">music</a>
-      <a href="/">back</a>
+    <div class="shop">
+      <p>If you want more sounds or need help producing, I made a cheap drumkit with pretty much everything you'll need.</p>
+      <div class="links">
+        <a href="https://payhip.com/vyexx" target="_blank" rel="noopener noreferrer">get the drumkit</a>
+        <a href="/music">music</a>
+        <a href="/">back</a>
+      </div>
     </div>
   </main>
 </body>
