@@ -224,7 +224,7 @@
     .streaming {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 1.5rem;
+      gap: 1.75rem;
       margin-top: 0.75rem;
       padding-top: 1.25rem;
       border-top: 3px solid var(--ink);
@@ -233,7 +233,7 @@
     .stream {
       display: flex;
       flex-direction: column;
-      gap: 0.85rem;
+      gap: 0.75rem;
       min-width: 0;
     }
 
@@ -254,19 +254,42 @@
       outline: none;
     }
 
-    .stream iframe {
-      width: 100%;
-      border: 0;
-      display: block;
-      background: transparent;
+    .stream .now {
+      min-height: 2.2em;
+      font-size: clamp(1rem, 2.4vw, 1.2rem);
     }
 
-    .stream.soundcloud iframe {
-      height: 300px;
+    .stream .progress {
+      font-size: 0.8rem;
     }
 
-    .stream.spotify iframe {
-      height: 352px;
+    .stream .transport button {
+      font-size: clamp(1.05rem, 2.8vw, 1.35rem);
+    }
+
+    .stream .volume {
+      grid-template-columns: auto 6.5rem;
+      font-size: 0.9rem;
+    }
+
+    .stream .list {
+      max-height: 14rem;
+    }
+
+    .stream .hint {
+      font-size: 0.85rem;
+      font-weight: 700;
+      opacity: 0.5;
+      letter-spacing: -0.01em;
+    }
+
+    .hidden-player {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      opacity: 0;
+      pointer-events: none;
+      overflow: hidden;
     }
 
     @media (max-width: 800px) {
@@ -350,24 +373,51 @@
     <ol class="list" id="list"></ol>
 
     <section class="streaming" aria-label="Listen elsewhere">
-      <div class="stream soundcloud">
+      <div class="stream" id="sc-player">
         <a class="label" href="https://soundcloud.com/vyexx" target="_blank" rel="noopener noreferrer">soundcloud</a>
-        <iframe
-          title="vyexx on SoundCloud"
-          loading="lazy"
-          allow="autoplay"
-          src="https://w.soundcloud.com/player/?url=https%3A//soundcloud.com/vyexx&color=%231a1814&auto_play=false&hide_related=true&show_comments=false&show_user=true&show_reposts=false&show_teaser=false">
-        </iframe>
+        <div class="now">
+          <span>now playing</span>
+          <div id="sc-title">loading...</div>
+        </div>
+        <div class="progress">
+          <span id="sc-current">0:00</span>
+          <input id="sc-seek" type="range" min="0" max="1000" value="0" step="1" aria-label="SoundCloud seek">
+          <span id="sc-duration">0:00</span>
+        </div>
+        <div class="controls">
+          <div class="transport">
+            <button type="button" id="sc-prev">prev</button>
+            <button type="button" id="sc-play">play</button>
+            <button type="button" id="sc-next">next</button>
+          </div>
+        </div>
+        <div class="volume">
+          <span>vol</span>
+          <input id="sc-volume" type="range" min="0" max="100" value="85" step="1" aria-label="SoundCloud volume">
+        </div>
+        <ol class="list" id="sc-list"></ol>
       </div>
 
-      <div class="stream spotify">
+      <div class="stream" id="sp-player">
         <a class="label" href="https://open.spotify.com/artist/77I6Fhu9UJvhUDx4WZLkRN" target="_blank" rel="noopener noreferrer">spotify</a>
-        <iframe
-          title="vyexx on Spotify"
-          loading="lazy"
-          allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-          src="https://open.spotify.com/embed/artist/77I6Fhu9UJvhUDx4WZLkRN?utm_source=generator&theme=0">
-        </iframe>
+        <div class="now">
+          <span>now playing</span>
+          <div id="sp-title">...</div>
+        </div>
+        <div class="progress">
+          <span id="sp-current">0:00</span>
+          <input id="sp-seek" type="range" min="0" max="1000" value="0" step="1" aria-label="Spotify seek">
+          <span id="sp-duration">0:00</span>
+        </div>
+        <div class="controls">
+          <div class="transport">
+            <button type="button" id="sp-prev">prev</button>
+            <button type="button" id="sp-play">play</button>
+            <button type="button" id="sp-next">next</button>
+          </div>
+        </div>
+        <p class="hint">volume is controlled in spotify</p>
+        <ol class="list" id="sp-list"></ol>
       </div>
     </section>
 
@@ -379,6 +429,18 @@
   </main>
 
   <audio id="audio" preload="metadata"></audio>
+
+  <iframe
+    id="sc-widget"
+    class="hidden-player"
+    title="SoundCloud widget"
+    allow="autoplay"
+    src="https://w.soundcloud.com/player/?url=https%3A%2F%2Fapi.soundcloud.com%2Fusers%2F1140959386&auto_play=false&hide_related=true&show_comments=false&show_user=false&show_reposts=false&visual=false">
+  </iframe>
+  <div id="spotify-embed" class="hidden-player"></div>
+
+  <script src="https://w.soundcloud.com/player/api.js"></script>
+  <script src="https://open.spotify.com/embed/iframe-api/v1" async></script>
 
   <script>
     const tracks = [
@@ -416,15 +478,43 @@
 
     let index = 0;
     let shuffling = false;
-    let repeatMode = "off"; // off | all | one
+    let repeatMode = "off";
     let seeking = false;
     let order = tracks.map((_, i) => i);
+
+    let scWidget = null;
+    let scSounds = [];
+    let scIndex = 0;
+    let scSeeking = false;
+    let scReady = false;
+
+    const spotifyTracks = [
+      { title: "i dont seem to care", uri: "spotify:track:7lbLLeA7I50OIJo2AJTIbF" },
+      { title: "i can't", uri: "spotify:track:7oTWBeKgjCAIg16VbXfyWR" }
+    ];
+    let spController = null;
+    let spIndex = 0;
+    let spSeeking = false;
+    let spPlaying = false;
+    let spDurationMs = 0;
 
     function formatTime(sec) {
       if (!Number.isFinite(sec)) return "0:00";
       const m = Math.floor(sec / 60);
       const s = Math.floor(sec % 60);
       return m + ":" + String(s).padStart(2, "0");
+    }
+
+    function pauseLocal() {
+      if (!audio.paused) audio.pause();
+    }
+
+    function pauseSoundCloud() {
+      if (scWidget && scReady) scWidget.pause();
+    }
+
+    function pauseSpotify() {
+      if (spController && spPlaying) spController.pause();
     }
 
     function rebuildOrder(keepCurrent) {
@@ -480,6 +570,8 @@
       currentEl.textContent = "0:00";
       durationEl.textContent = "0:00";
       if (autoplay) {
+        pauseSoundCloud();
+        pauseSpotify();
         audio.play().catch(() => {
           playBtn.textContent = "play";
         });
@@ -488,6 +580,8 @@
 
     function playPause() {
       if (audio.paused) {
+        pauseSoundCloud();
+        pauseSpotify();
         audio.play().catch(() => {});
       } else {
         audio.pause();
@@ -572,6 +666,257 @@
 
     renderList();
     load(false);
+
+    // SoundCloud custom player
+    const scTitle = document.getElementById("sc-title");
+    const scPlay = document.getElementById("sc-play");
+    const scPrev = document.getElementById("sc-prev");
+    const scNext = document.getElementById("sc-next");
+    const scSeek = document.getElementById("sc-seek");
+    const scVol = document.getElementById("sc-volume");
+    const scCurrent = document.getElementById("sc-current");
+    const scDuration = document.getElementById("sc-duration");
+    const scList = document.getElementById("sc-list");
+
+    function renderScList() {
+      scList.innerHTML = "";
+      scSounds.forEach((sound, i) => {
+        const li = document.createElement("li");
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.textContent = sound.title || ("track " + (i + 1));
+        btn.className = i === scIndex ? "playing" : "";
+        btn.addEventListener("click", () => {
+          scIndex = i;
+          scWidget.skip(i);
+          pauseLocal();
+          pauseSpotify();
+          scWidget.play();
+          markScPlaying();
+        });
+        li.appendChild(btn);
+        scList.appendChild(li);
+      });
+    }
+
+    function markScPlaying() {
+      [...scList.querySelectorAll("button")].forEach((btn, i) => {
+        btn.classList.toggle("playing", i === scIndex);
+      });
+      if (scSounds[scIndex]) scTitle.textContent = scSounds[scIndex].title;
+    }
+
+    function initSoundCloud() {
+      scWidget = SC.Widget(document.getElementById("sc-widget"));
+      scWidget.bind(SC.Widget.Events.READY, () => {
+        scReady = true;
+        scWidget.setVolume(Number(scVol.value));
+        scWidget.getSounds((sounds) => {
+          scSounds = (sounds || []).filter((s) => s && s.title);
+          if (!scSounds.length) {
+            scTitle.textContent = "no tracks found";
+            return;
+          }
+          scIndex = 0;
+          renderScList();
+          markScPlaying();
+          scWidget.getDuration((ms) => {
+            scDuration.textContent = formatTime(ms / 1000);
+          });
+        });
+      });
+
+      scWidget.bind(SC.Widget.Events.PLAY, () => {
+        scPlay.textContent = "pause";
+        pauseLocal();
+        pauseSpotify();
+        scWidget.getCurrentSoundIndex((i) => {
+          scIndex = i || 0;
+          markScPlaying();
+        });
+      });
+
+      scWidget.bind(SC.Widget.Events.PAUSE, () => {
+        scPlay.textContent = "play";
+      });
+
+      scWidget.bind(SC.Widget.Events.PLAY_PROGRESS, (data) => {
+        if (scSeeking) return;
+        const dur = data.relativePosition ? data.currentPosition / data.relativePosition : 0;
+        if (dur > 0) {
+          scSeek.value = String(Math.floor(data.relativePosition * 1000));
+          scDuration.textContent = formatTime(dur / 1000);
+        }
+        scCurrent.textContent = formatTime(data.currentPosition / 1000);
+      });
+
+      scWidget.bind(SC.Widget.Events.FINISH, () => {
+        scPlay.textContent = "play";
+      });
+    }
+
+    scPlay.addEventListener("click", () => {
+      if (!scReady) return;
+      scWidget.isPaused((paused) => {
+        if (paused) {
+          pauseLocal();
+          pauseSpotify();
+          scWidget.play();
+        } else {
+          scWidget.pause();
+        }
+      });
+    });
+
+    scPrev.addEventListener("click", () => {
+      if (!scReady || !scSounds.length) return;
+      scIndex = (scIndex - 1 + scSounds.length) % scSounds.length;
+      scWidget.skip(scIndex);
+      pauseLocal();
+      pauseSpotify();
+      scWidget.play();
+      markScPlaying();
+    });
+
+    scNext.addEventListener("click", () => {
+      if (!scReady || !scSounds.length) return;
+      scIndex = (scIndex + 1) % scSounds.length;
+      scWidget.skip(scIndex);
+      pauseLocal();
+      pauseSpotify();
+      scWidget.play();
+      markScPlaying();
+    });
+
+    scVol.addEventListener("input", () => {
+      if (scReady) scWidget.setVolume(Number(scVol.value));
+    });
+
+    scSeek.addEventListener("pointerdown", () => { scSeeking = true; });
+    scSeek.addEventListener("pointerup", () => { scSeeking = false; });
+    scSeek.addEventListener("change", () => {
+      if (!scReady) return;
+      scWidget.getDuration((ms) => {
+        scWidget.seekTo((Number(scSeek.value) / 1000) * ms);
+        scSeeking = false;
+      });
+    });
+
+    if (window.SC) initSoundCloud();
+    else {
+      const waitSc = setInterval(() => {
+        if (window.SC) {
+          clearInterval(waitSc);
+          initSoundCloud();
+        }
+      }, 50);
+    }
+
+    // Spotify custom player
+    const spTitle = document.getElementById("sp-title");
+    const spPlay = document.getElementById("sp-play");
+    const spPrev = document.getElementById("sp-prev");
+    const spNext = document.getElementById("sp-next");
+    const spSeekEl = document.getElementById("sp-seek");
+    const spCurrentEl = document.getElementById("sp-current");
+    const spDurationEl = document.getElementById("sp-duration");
+    const spList = document.getElementById("sp-list");
+
+    function markSpPlaying() {
+      [...spList.querySelectorAll("button")].forEach((btn, i) => {
+        btn.classList.toggle("playing", i === spIndex);
+      });
+      spTitle.textContent = spotifyTracks[spIndex].title;
+    }
+
+    function renderSpList() {
+      spList.innerHTML = "";
+      spotifyTracks.forEach((track, i) => {
+        const li = document.createElement("li");
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.textContent = track.title;
+        btn.className = i === spIndex ? "playing" : "";
+        btn.addEventListener("click", () => {
+          spIndex = i;
+          markSpPlaying();
+          if (!spController) return;
+          pauseLocal();
+          pauseSoundCloud();
+          spController.loadUri(track.uri, true);
+        });
+        li.appendChild(btn);
+        spList.appendChild(li);
+      });
+      markSpPlaying();
+    }
+
+    function loadSp(autoplay) {
+      if (!spController) return;
+      pauseLocal();
+      pauseSoundCloud();
+      spController.loadUri(spotifyTracks[spIndex].uri, !!autoplay);
+      markSpPlaying();
+    }
+
+    renderSpList();
+
+    spPlay.addEventListener("click", () => {
+      if (!spController) return;
+      if (spPlaying) {
+        spController.pause();
+      } else {
+        pauseLocal();
+        pauseSoundCloud();
+        spController.resume();
+      }
+    });
+
+    spPrev.addEventListener("click", () => {
+      spIndex = (spIndex - 1 + spotifyTracks.length) % spotifyTracks.length;
+      loadSp(true);
+    });
+
+    spNext.addEventListener("click", () => {
+      spIndex = (spIndex + 1) % spotifyTracks.length;
+      loadSp(true);
+    });
+
+    spSeekEl.addEventListener("pointerdown", () => { spSeeking = true; });
+    spSeekEl.addEventListener("pointerup", () => { spSeeking = false; });
+    spSeekEl.addEventListener("change", () => {
+      if (!spController || !spDurationMs) return;
+      const seconds = ((Number(spSeekEl.value) / 1000) * spDurationMs) / 1000;
+      spController.seek(seconds);
+      spSeeking = false;
+    });
+
+    window.onSpotifyIframeApiReady = (IFrameAPI) => {
+      const element = document.getElementById("spotify-embed");
+      const options = {
+        uri: spotifyTracks[0].uri,
+        width: 1,
+        height: 1
+      };
+      IFrameAPI.createController(element, options, (EmbedController) => {
+        spController = EmbedController;
+        EmbedController.addListener("playback_update", (e) => {
+          const d = e.data || {};
+          spPlaying = !d.isPaused;
+          spPlay.textContent = spPlaying ? "pause" : "play";
+          spDurationMs = d.duration || 0;
+          spDurationEl.textContent = formatTime(spDurationMs / 1000);
+          spCurrentEl.textContent = formatTime((d.position || 0) / 1000);
+          if (!spSeeking && spDurationMs > 0) {
+            spSeekEl.value = String(Math.floor(((d.position || 0) / spDurationMs) * 1000));
+          }
+          if (spPlaying) {
+            pauseLocal();
+            pauseSoundCloud();
+          }
+        });
+      });
+    };
   </script>
 </body>
 </html>
