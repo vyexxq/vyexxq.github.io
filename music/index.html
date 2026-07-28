@@ -12,6 +12,7 @@
       --ink: #1a1814;
       --mist: #e8e4dc;
       --wash: #c9d4c8;
+      --line: rgba(26, 24, 20, 0.18);
     }
 
     * {
@@ -20,19 +21,15 @@
     }
 
     html, body {
-      height: 100%;
+      min-height: 100%;
     }
 
     body {
-      display: grid;
-      place-items: center;
-      min-height: 100dvh;
       font-family: Syne, sans-serif;
       color: var(--ink);
       background:
-        radial-gradient(ellipse 80% 60% at 50% 40%, rgba(255, 255, 255, 0.55), transparent 70%),
+        radial-gradient(ellipse 80% 60% at 50% 20%, rgba(255, 255, 255, 0.55), transparent 70%),
         linear-gradient(160deg, var(--mist) 0%, var(--wash) 55%, #b8c5c0 100%);
-      overflow: hidden;
     }
 
     body::before {
@@ -42,36 +39,196 @@
       background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.4'/%3E%3C/svg%3E");
       opacity: 0.07;
       pointer-events: none;
+      z-index: 0;
     }
 
-    .mark {
+    .page {
       position: relative;
+      z-index: 1;
+      width: min(42rem, calc(100% - 2rem));
+      margin: 0 auto;
+      padding: 3rem 0 4rem;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      gap: 1rem;
-      padding: 0 1.5rem;
-      text-align: center;
+      gap: 1.25rem;
       animation: rise 1.1s cubic-bezier(0.22, 1, 0.36, 1) both;
     }
 
     h1 {
-      font-size: clamp(3.5rem, 14vw, 8rem);
+      font-size: clamp(3.5rem, 14vw, 7rem);
       font-weight: 800;
       letter-spacing: -0.04em;
+      line-height: 0.95;
+    }
+
+    .notice {
+      font-size: clamp(0.95rem, 2.4vw, 1.1rem);
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      line-height: 1.4;
+      opacity: 0.78;
+      max-width: 34rem;
+    }
+
+    .notice strong {
+      font-weight: 800;
+    }
+
+    .now {
+      font-size: clamp(1.15rem, 3vw, 1.5rem);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.15;
+      min-height: 2.4em;
+    }
+
+    .now span {
+      opacity: 0.45;
+      font-size: 0.75em;
+      display: block;
+      margin-bottom: 0.2rem;
+    }
+
+    .progress {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 0.75rem;
+      align-items: center;
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      opacity: 0.8;
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 4px;
+      background: var(--line);
+      border-radius: 0;
+      outline: none;
+      cursor: pointer;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      background: var(--ink);
+      border: none;
+      border-radius: 0;
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 14px;
+      height: 14px;
+      background: var(--ink);
+      border: none;
+      border-radius: 0;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.65rem 1rem;
+    }
+
+    button {
+      font: inherit;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: inherit;
+      background: none;
+      border: none;
+      border-bottom: 3px solid currentColor;
+      padding: 0.15rem 0;
+      cursor: pointer;
       line-height: 1;
     }
 
+    button:hover,
+    button:focus-visible {
+      opacity: 0.65;
+      outline: none;
+    }
+
+    button.active {
+      opacity: 1;
+      border-bottom-color: var(--ink);
+    }
+
+    button:not(.active).mode {
+      opacity: 0.4;
+      border-bottom-color: transparent;
+    }
+
+    .transport button {
+      font-size: clamp(1.25rem, 3.5vw, 1.75rem);
+    }
+
+    .modes {
+      display: flex;
+      gap: 0.85rem;
+      margin-left: auto;
+    }
+
+    .modes button {
+      font-size: 0.95rem;
+    }
+
+    .volume {
+      display: grid;
+      grid-template-columns: auto 8rem;
+      gap: 0.65rem;
+      align-items: center;
+      font-size: 0.95rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      width: fit-content;
+    }
+
+    .list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      border-top: 3px solid var(--ink);
+      max-height: min(40vh, 22rem);
+      overflow: auto;
+    }
+
+    .list button {
+      width: 100%;
+      text-align: left;
+      border: none;
+      border-bottom: 1px solid var(--line);
+      border-radius: 0;
+      padding: 0.85rem 0.1rem;
+      font-size: clamp(0.95rem, 2.2vw, 1.1rem);
+      opacity: 0.7;
+    }
+
+    .list button:hover,
+    .list button:focus-visible {
+      opacity: 1;
+    }
+
+    .list button.playing {
+      opacity: 1;
+      border-bottom: 3px solid var(--ink);
+    }
+
     a.back {
-      position: relative;
-      margin-top: 0.75rem;
+      align-self: flex-start;
+      margin-top: 0.5rem;
       font-size: clamp(1rem, 2.5vw, 1.25rem);
       font-weight: 800;
       letter-spacing: -0.02em;
       color: inherit;
       text-decoration: none;
       border-bottom: 3px solid currentColor;
-      animation: rise 1.1s cubic-bezier(0.22, 1, 0.36, 1) 0.12s both;
     }
 
     a.back:hover,
@@ -93,9 +250,242 @@
   </style>
 </head>
 <body>
-  <div class="mark">
+  <main class="page">
     <h1>music</h1>
+
+    <p class="notice">
+      These tracks are <strong>not for use</strong>.
+      For licensing, negotiation, and prices, DM
+      <strong>fruityparametriceq2</strong> on Discord.
+    </p>
+
+    <div class="now" id="now">
+      <span>now playing</span>
+      <div id="title">—</div>
+    </div>
+
+    <div class="progress">
+      <span id="current">0:00</span>
+      <input id="seek" type="range" min="0" max="1000" value="0" step="1" aria-label="Seek">
+      <span id="duration">0:00</span>
+    </div>
+
+    <div class="controls">
+      <div class="transport">
+        <button type="button" id="prev" aria-label="Previous">prev</button>
+        <button type="button" id="play" aria-label="Play">play</button>
+        <button type="button" id="next" aria-label="Next">next</button>
+      </div>
+      <div class="modes">
+        <button type="button" class="mode" id="shuffle" aria-pressed="false">shuffle</button>
+        <button type="button" class="mode" id="repeat" aria-pressed="false">repeat</button>
+      </div>
+    </div>
+
+    <div class="volume">
+      <span>vol</span>
+      <input id="volume" type="range" min="0" max="1" value="0.85" step="0.01" aria-label="Volume">
+    </div>
+
+    <ol class="list" id="list"></ol>
+
     <a class="back" href="/">back</a>
-  </div>
+  </main>
+
+  <audio id="audio" preload="metadata"></audio>
+
+  <script>
+    const tracks = [
+      { title: "250 razzler", src: "tracks/250-razzler.wav" },
+      { title: "Are you afraid of visitors!", src: "tracks/are-you-afraid-of-visitors.flac" },
+      { title: "beat w dime", src: "tracks/beat-w-dime.flac" },
+      { title: "digijerk", src: "tracks/digijerk.flac" },
+      { title: "dumb old digicore", src: "tracks/dumb-old-digicore.flac" },
+      { title: "guitar", src: "tracks/guitar.wav" },
+      { title: "i dont like this one", src: "tracks/i-dont-like-this-one.flac" },
+      { title: "i like this one its cool", src: "tracks/i-like-this-one-its-cool.wav" },
+      { title: "It's all just one big fucked-up mess", src: "tracks/its-all-just-one-big-fucked-up-mess.flac" },
+      { title: "old friends", src: "tracks/old-friends.wav" },
+      { title: "pibby virus", src: "tracks/pibby-virus.wav" },
+      { title: "pitfall", src: "tracks/pitfall.flac" },
+      { title: "Sooo... You alone!", src: "tracks/sooo-you-alone.flac" },
+      { title: "step", src: "tracks/step.flac" },
+      { title: "stupid beat", src: "tracks/stupid-beat.wav" },
+      { title: "undertale (w, oxyg3n)", src: "tracks/undertale-w-oxyg3n.wav" },
+      { title: "Who are you! Me! I am me. And you... you were my home", src: "tracks/who-are-you-me-i-am-me-and-you-you-were-my-home-1.flac" }
+    ];
+
+    const audio = document.getElementById("audio");
+    const titleEl = document.getElementById("title");
+    const playBtn = document.getElementById("play");
+    const prevBtn = document.getElementById("prev");
+    const nextBtn = document.getElementById("next");
+    const seek = document.getElementById("seek");
+    const volume = document.getElementById("volume");
+    const currentEl = document.getElementById("current");
+    const durationEl = document.getElementById("duration");
+    const listEl = document.getElementById("list");
+    const shuffleBtn = document.getElementById("shuffle");
+    const repeatBtn = document.getElementById("repeat");
+
+    let index = 0;
+    let shuffling = false;
+    let repeatMode = "off"; // off | all | one
+    let seeking = false;
+    let order = tracks.map((_, i) => i);
+
+    function formatTime(sec) {
+      if (!Number.isFinite(sec)) return "0:00";
+      const m = Math.floor(sec / 60);
+      const s = Math.floor(sec % 60);
+      return m + ":" + String(s).padStart(2, "0");
+    }
+
+    function rebuildOrder(keepCurrent) {
+      const currentId = order[index];
+      order = tracks.map((_, i) => i);
+      if (shuffling) {
+        for (let i = order.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [order[i], order[j]] = [order[j], order[i]];
+        }
+      }
+      if (keepCurrent) {
+        const at = order.indexOf(currentId);
+        if (at > 0) {
+          order.splice(at, 1);
+          order.unshift(currentId);
+        }
+        index = 0;
+      }
+    }
+
+    function renderList() {
+      listEl.innerHTML = "";
+      tracks.forEach((track, i) => {
+        const li = document.createElement("li");
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.textContent = track.title;
+        btn.className = i === order[index] ? "playing" : "";
+        btn.addEventListener("click", () => {
+          const pos = order.indexOf(i);
+          index = pos === -1 ? i : pos;
+          load(true);
+        });
+        li.appendChild(btn);
+        listEl.appendChild(li);
+      });
+    }
+
+    function markPlaying() {
+      const active = order[index];
+      [...listEl.querySelectorAll("button")].forEach((btn, i) => {
+        btn.classList.toggle("playing", i === active);
+      });
+    }
+
+    function load(autoplay) {
+      const track = tracks[order[index]];
+      audio.src = track.src;
+      titleEl.textContent = track.title;
+      markPlaying();
+      seek.value = 0;
+      currentEl.textContent = "0:00";
+      durationEl.textContent = "0:00";
+      if (autoplay) {
+        audio.play().catch(() => {
+          playBtn.textContent = "play";
+        });
+      }
+    }
+
+    function playPause() {
+      if (audio.paused) {
+        audio.play().catch(() => {});
+      } else {
+        audio.pause();
+      }
+    }
+
+    function step(dir) {
+      if (repeatMode === "one" && dir === 1 && audio.currentTime > 0.2) {
+        audio.currentTime = 0;
+        audio.play().catch(() => {});
+        return;
+      }
+      index = (index + dir + order.length) % order.length;
+      load(true);
+    }
+
+    playBtn.addEventListener("click", playPause);
+    prevBtn.addEventListener("click", () => {
+      if (audio.currentTime > 3) {
+        audio.currentTime = 0;
+        return;
+      }
+      step(-1);
+    });
+    nextBtn.addEventListener("click", () => step(1));
+
+    shuffleBtn.addEventListener("click", () => {
+      shuffling = !shuffling;
+      shuffleBtn.classList.toggle("active", shuffling);
+      shuffleBtn.setAttribute("aria-pressed", String(shuffling));
+      rebuildOrder(true);
+      markPlaying();
+    });
+
+    repeatBtn.addEventListener("click", () => {
+      if (repeatMode === "off") repeatMode = "all";
+      else if (repeatMode === "all") repeatMode = "one";
+      else repeatMode = "off";
+
+      repeatBtn.classList.toggle("active", repeatMode !== "off");
+      repeatBtn.setAttribute("aria-pressed", String(repeatMode !== "off"));
+      repeatBtn.textContent =
+        repeatMode === "one" ? "repeat 1" : repeatMode === "all" ? "repeat" : "repeat";
+    });
+
+    volume.addEventListener("input", () => {
+      audio.volume = Number(volume.value);
+    });
+
+    seek.addEventListener("pointerdown", () => { seeking = true; });
+    seek.addEventListener("pointerup", () => { seeking = false; });
+    seek.addEventListener("change", () => {
+      if (!Number.isFinite(audio.duration)) return;
+      audio.currentTime = (Number(seek.value) / 1000) * audio.duration;
+      seeking = false;
+    });
+
+    audio.volume = Number(volume.value);
+
+    audio.addEventListener("play", () => { playBtn.textContent = "pause"; });
+    audio.addEventListener("pause", () => { playBtn.textContent = "play"; });
+    audio.addEventListener("loadedmetadata", () => {
+      durationEl.textContent = formatTime(audio.duration);
+    });
+    audio.addEventListener("timeupdate", () => {
+      if (!Number.isFinite(audio.duration) || seeking) return;
+      seek.value = String(Math.floor((audio.currentTime / audio.duration) * 1000) || 0);
+      currentEl.textContent = formatTime(audio.currentTime);
+    });
+    audio.addEventListener("ended", () => {
+      if (repeatMode === "one") {
+        audio.currentTime = 0;
+        audio.play().catch(() => {});
+        return;
+      }
+      if (index === order.length - 1 && repeatMode !== "all") {
+        playBtn.textContent = "play";
+        return;
+      }
+      step(1);
+    });
+
+    renderList();
+    load(false);
+  </script>
 </body>
 </html>
