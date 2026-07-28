@@ -44,13 +44,32 @@
       pointer-events: none;
     }
 
-    h1 {
+    .mark {
       position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+      padding: 0 1.5rem;
+      text-align: center;
+      animation: rise 1.1s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    h1 {
       font-size: clamp(3.5rem, 14vw, 8rem);
       font-weight: 800;
       letter-spacing: -0.04em;
       line-height: 1;
-      animation: rise 1.1s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    p {
+      max-width: 22rem;
+      font-size: clamp(0.95rem, 2.4vw, 1.15rem);
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      line-height: 1.35;
+      opacity: 0.72;
+      animation: rise 1.1s cubic-bezier(0.22, 1, 0.36, 1) 0.12s both;
     }
 
     @keyframes rise {
@@ -66,6 +85,9 @@
   </style>
 </head>
 <body>
-  <h1>vyexx</h1>
+  <div class="mark">
+    <h1>vyexx</h1>
+    <p>Solo artist. Vocals to game soundtracks.</p>
+  </div>
 </body>
 </html>
