@@ -9,9 +9,10 @@
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&display=swap" rel="stylesheet">
   <style>
     :root {
-      --ink: #f2f0ea;
-      --mute: rgba(242, 240, 234, 0.72);
-      --line: rgba(242, 240, 234, 0.35);
+      --ink: #1a1814;
+      --mute: rgba(26, 24, 20, 0.72);
+      --mist: #e8e4dc;
+      --wash: #c9d4c8;
     }
 
     * {
@@ -26,16 +27,17 @@
     body {
       font-family: Syne, sans-serif;
       color: var(--ink);
-      background: #050505;
+      background:
+        radial-gradient(ellipse 80% 60% at 50% 20%, rgba(255, 255, 255, 0.55), transparent 70%),
+        linear-gradient(160deg, var(--mist) 0%, var(--wash) 55%, #b8c5c0 100%);
     }
 
     .bg {
       position: fixed;
       inset: 0;
-      background:
-        url("bg.png") center / min(72vmin, 34rem) no-repeat,
-        #050505;
-      opacity: 0.28;
+      background: url("bg.png") center / min(72vmin, 34rem) no-repeat;
+      opacity: 0.18;
+      mix-blend-mode: multiply;
       pointer-events: none;
       z-index: 0;
     }
