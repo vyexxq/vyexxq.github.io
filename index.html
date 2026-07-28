@@ -72,6 +72,25 @@
       animation: rise 1.1s cubic-bezier(0.22, 1, 0.36, 1) 0.12s both;
     }
 
+    a.music {
+      position: relative;
+      margin-top: 0.75rem;
+      font-size: clamp(1.35rem, 4vw, 2rem);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1;
+      color: inherit;
+      text-decoration: none;
+      border-bottom: 3px solid currentColor;
+      animation: rise 1.1s cubic-bezier(0.22, 1, 0.36, 1) 0.22s both;
+    }
+
+    a.music:hover,
+    a.music:focus-visible {
+      opacity: 0.65;
+      outline: none;
+    }
+
     @keyframes rise {
       from {
         opacity: 0;
@@ -88,6 +107,7 @@
   <div class="mark">
     <h1>vyexx</h1>
     <p>Solo artist. Vocals and video game soundtracks.</p>
+    <a class="music" href="/music">music</a>
   </div>
 </body>
 </html>

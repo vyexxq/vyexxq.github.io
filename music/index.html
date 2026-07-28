@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>music — vyexx</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ink: #1a1814;
+      --mist: #e8e4dc;
+      --wash: #c9d4c8;
+    }
+
+    * {
+      margin: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      height: 100%;
+    }
+
+    body {
+      display: grid;
+      place-items: center;
+      min-height: 100dvh;
+      font-family: Syne, sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(ellipse 80% 60% at 50% 40%, rgba(255, 255, 255, 0.55), transparent 70%),
+        linear-gradient(160deg, var(--mist) 0%, var(--wash) 55%, #b8c5c0 100%);
+      overflow: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.4'/%3E%3C/svg%3E");
+      opacity: 0.07;
+      pointer-events: none;
+    }
+
+    .mark {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+      padding: 0 1.5rem;
+      text-align: center;
+      animation: rise 1.1s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    h1 {
+      font-size: clamp(3.5rem, 14vw, 8rem);
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      line-height: 1;
+    }
+
+    a.back {
+      position: relative;
+      margin-top: 0.75rem;
+      font-size: clamp(1rem, 2.5vw, 1.25rem);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: inherit;
+      text-decoration: none;
+      border-bottom: 3px solid currentColor;
+      animation: rise 1.1s cubic-bezier(0.22, 1, 0.36, 1) 0.12s both;
+    }
+
+    a.back:hover,
+    a.back:focus-visible {
+      opacity: 0.65;
+      outline: none;
+    }
+
+    @keyframes rise {
+      from {
+        opacity: 0;
+        transform: translateY(18px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="mark">
+    <h1>music</h1>
+    <a class="back" href="/">back</a>
+  </div>
+</body>
+</html>
