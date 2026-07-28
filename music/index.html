@@ -220,9 +220,14 @@
       border-bottom: 3px solid var(--ink);
     }
 
-    a.back {
-      align-self: flex-start;
+    .nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem 1.35rem;
       margin-top: 0.5rem;
+    }
+
+    .nav a {
       font-size: clamp(1rem, 2.5vw, 1.25rem);
       font-weight: 800;
       letter-spacing: -0.02em;
@@ -231,8 +236,8 @@
       border-bottom: 3px solid currentColor;
     }
 
-    a.back:hover,
-    a.back:focus-visible {
+    .nav a:hover,
+    .nav a:focus-visible {
       opacity: 0.65;
       outline: none;
     }
@@ -289,7 +294,11 @@
 
     <ol class="list" id="list"></ol>
 
-    <a class="back" href="/">back</a>
+    <div class="nav">
+      <a href="/soundtrack">soundtrack</a>
+      <a href="/hire">hire</a>
+      <a href="/">back</a>
+    </div>
   </main>
 
   <audio id="audio" preload="metadata"></audio>
