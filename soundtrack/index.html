@@ -196,8 +196,22 @@
       display: flex;
       flex-direction: column;
       border-top: 3px solid var(--ink);
-      max-height: min(40vh, 22rem);
+      max-height: min(55vh, 32rem);
       overflow: auto;
+    }
+
+    .list .group {
+      margin-top: 0.85rem;
+      padding: 0.55rem 0.1rem 0.35rem;
+      font-size: clamp(0.95rem, 2.2vw, 1.15rem);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      opacity: 0.45;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .list .group:first-child {
+      margin-top: 0;
     }
 
     .list button {
@@ -265,7 +279,7 @@
     </p>
 
     <div class="now" id="now">
-      <span>now playing</span>
+      <span id="now-label">now playing</span>
       <div id="title">...</div>
     </div>
 
@@ -305,16 +319,29 @@
 
   <script>
     const tracks = [
-      { title: "Cave", src: "tracks/cave.wav" },
-      { title: "Cutscene", src: "tracks/cutscene.wav" },
-      { title: "Its alright", src: "tracks/its-alright.wav" },
-      { title: "Jazz attempt", src: "tracks/jazz-attempt.wav" },
-      { title: "Mystery", src: "tracks/mystery.wav" },
-      { title: "Sea", src: "tracks/sea.wav" }
+      { group: "Cyranthil", title: "A Cold Forest", src: "tracks/wor/cyranthil/a-cold-forest.ogg" },
+      { group: "Cyranthil", title: "Boss", src: "tracks/wor/cyranthil/boss.mp3" },
+      { group: "Cyranthil", title: "Combat", src: "tracks/wor/cyranthil/combat.mp3" },
+      { group: "Cyranthil", title: "Cyranthil", src: "tracks/wor/cyranthil/cyranthil.ogg" },
+      { group: "Desert", title: "Combat", src: "tracks/wor/desert/combat.flac" },
+      { group: "Desert", title: "Desert", src: "tracks/wor/desert/desert.wav" },
+      { group: "Trasia", title: "Combat", src: "tracks/wor/trasia/combat.ogg" },
+      { group: "Trasia", title: "New Trasia", src: "tracks/wor/trasia/new-trasia.ogg" },
+      { group: "Trasia", title: "Outskirts", src: "tracks/wor/trasia/outskirts.ogg" },
+      { group: "Trasia", title: "Trasia", src: "tracks/wor/trasia/trasia.ogg" },
+      { group: "Trasia", title: "Trasiaback", src: "tracks/wor/trasia/trasiaback.ogg" },
+      { group: "Trasia", title: "Trasiabackcombat", src: "tracks/wor/trasia/trasiabackcombat.ogg" },
+      { group: "Other", title: "Cave", src: "tracks/cave.wav" },
+      { group: "Other", title: "Cutscene", src: "tracks/cutscene.wav" },
+      { group: "Other", title: "Its alright", src: "tracks/its-alright.wav" },
+      { group: "Other", title: "Jazz attempt", src: "tracks/jazz-attempt.wav" },
+      { group: "Other", title: "Mystery", src: "tracks/mystery.wav" },
+      { group: "Other", title: "Sea", src: "tracks/sea.wav" }
     ];
 
     const audio = document.getElementById("audio");
     const titleEl = document.getElementById("title");
+    const nowLabel = document.getElementById("now-label");
     const playBtn = document.getElementById("play");
     const prevBtn = document.getElementById("prev");
     const nextBtn = document.getElementById("next");
@@ -328,7 +355,7 @@
 
     let index = 0;
     let shuffling = false;
-    let repeatMode = "off"; // off | all | one
+    let repeatMode = "off";
     let seeking = false;
     let order = tracks.map((_, i) => i);
 
@@ -360,11 +387,20 @@
 
     function renderList() {
       listEl.innerHTML = "";
+      let lastGroup = null;
       tracks.forEach((track, i) => {
+        if (track.group !== lastGroup) {
+          lastGroup = track.group;
+          const header = document.createElement("li");
+          header.className = "group";
+          header.textContent = track.group;
+          listEl.appendChild(header);
+        }
         const li = document.createElement("li");
         const btn = document.createElement("button");
         btn.type = "button";
         btn.textContent = track.title;
+        btn.dataset.index = String(i);
         btn.className = i === order[index] ? "playing" : "";
         btn.addEventListener("click", () => {
           const pos = order.indexOf(i);
@@ -378,14 +414,15 @@
 
     function markPlaying() {
       const active = order[index];
-      [...listEl.querySelectorAll("button")].forEach((btn, i) => {
-        btn.classList.toggle("playing", i === active);
+      listEl.querySelectorAll("button").forEach((btn) => {
+        btn.classList.toggle("playing", Number(btn.dataset.index) === active);
       });
     }
 
     function load(autoplay) {
       const track = tracks[order[index]];
       audio.src = track.src;
+      nowLabel.textContent = track.group || "now playing";
       titleEl.textContent = track.title;
       markPlaying();
       seek.value = 0;
